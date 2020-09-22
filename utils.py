@@ -2,6 +2,8 @@
 Created on Tue Sep 22 08:54:15 2020
 
 @author: Bogdan
+
+This script contains utility functions
 '''
 import os
 import matplotlib.pyplot as plt

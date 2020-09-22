@@ -2,6 +2,13 @@
 Created on Fri Sep 18 11:58:07 2020
 
 @author: Bogdan
+
+This script reorganizes the original dataset, which was organized into 9170
+directories named following the pattern <carBrand_carModel_modelYear>. Since
+we are classifying cars by their brand, we reorganize the dataset into 75
+directories, named by car brands and rename images to follow the pattern
+<carBrand_carModel_modelYear_indexNumber>; so that performing a stratified
+split of the data into training and testing sets is possible
 '''
 import os
 import shutil
@@ -10,9 +17,7 @@ import shutil
 ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Cars')
 REORGANIZED_DATASET_LOCATION = 'dataset'
 
-# Reorganize the original dataset into directories named after the car brands,
-# containing all images representing a car brand, renamed and indexed by their
-# model and year
+# Determine the set of car brands
 is_dir_predicate = lambda path: os.path.isdir(os.path.join(ORIGINAL_DATASET_LOCATION, path))
 dataset_directories = list(filter(is_dir_predicate, os.listdir(ORIGINAL_DATASET_LOCATION)))
 car_brands = set([directory.split('_')[0] for directory in dataset_directories])
