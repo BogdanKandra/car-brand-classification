@@ -5,11 +5,13 @@ Created on Tue Sep 22 08:54:15 2020
 
 This script contains utility functions
 '''
+import json
 import os
 import matplotlib.pyplot as plt
 
 # Constants
 FIGURES_LOCATION = 'figures'
+TEXTS_LOCATION = 'texts'
 
 def save_bar_plot(title, xlabel, ylabel, xdata, ydata, color='r', plot_name='figure'):
     ''' Generates a bar plot using the given data and saves it to disk '''
@@ -29,3 +31,8 @@ def show_bar_plot(figure_index, title, xlabel, ylabel, xdata, ydata, color='r'):
     plt.ylabel(ylabel, fontweight='bold')
     plt.bar(xdata, ydata, color=color)
     plt.show()
+
+def write_dictionary(dictionary, file_name):
+    ''' Writes a dictionary to the specified file, as an indented JSON '''
+    with open(os.path.join(TEXTS_LOCATION, file_name), 'w') as f:
+        f.write(json.dumps(dictionary, indent=4))
