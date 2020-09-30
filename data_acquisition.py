@@ -32,7 +32,7 @@ for brand in car_brands:
     directory_path = os.path.join(REORGANIZED_DATASET_LOCATION, brand)
     try:
         os.mkdir(directory_path)
-    except FileExistsError as err:
+    except FileExistsError:
         # Delete the directory and all its contents and create it anew
         shutil.rmtree(directory_path, ignore_errors=True)
         os.mkdir(directory_path)
