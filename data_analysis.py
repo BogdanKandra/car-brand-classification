@@ -12,14 +12,10 @@ from collections import OrderedDict
 import os
 import utils
 
-# Constants
-DATASET_LOCATION = 'dataset'
-TEXT_LOCATION = 'text'
-
 # Determine the top 10 classes
-is_dir_predicate = lambda path: os.path.isdir(os.path.join(DATASET_LOCATION, path))
-dataset_directories = list(filter(is_dir_predicate, os.listdir(DATASET_LOCATION)))
-classes_counts = {directory: len(os.listdir(os.path.join(DATASET_LOCATION, directory))) for directory in dataset_directories}
+is_dir_predicate = lambda path: os.path.isdir(os.path.join(utils.DATASET_LOCATION, path))
+dataset_directories = list(filter(is_dir_predicate, os.listdir(utils.DATASET_LOCATION)))
+classes_counts = {directory: len(os.listdir(os.path.join(utils.DATASET_LOCATION, directory))) for directory in dataset_directories}
 sorted_classes_counts = OrderedDict({k: v for k, v in sorted(classes_counts.items(), key=lambda item: item[1], reverse=True)})
 top10_classes_counts = OrderedDict({k: v for k, v in list(sorted_classes_counts.items())[:10]})
 
@@ -30,13 +26,13 @@ samples_information = {}
 
 for car_brand in top10_classes_counts.keys():
     print('> Computing sample counts for brand: {}...'.format(car_brand))
-    images_names = os.listdir(os.path.join(DATASET_LOCATION, car_brand))
+    images_names = os.listdir(os.path.join(utils.DATASET_LOCATION, car_brand))
     models = set([name.split('_')[1] for name in images_names])
     for car_model in models:
         years = set([name.split('_')[2] for name in images_names if car_model in name])
         for year in years:
             samples_count = len([name for name in images_names if car_model in name and year in name])
-            key = car_brand + '-' + car_model + '-' + year
+            key = car_brand + '|' + car_model + '|' + year
             samples_information[key] = samples_count
 
 samples_information = OrderedDict({k: v for k, v in sorted(samples_information.items(), key=lambda item: item[0])})
