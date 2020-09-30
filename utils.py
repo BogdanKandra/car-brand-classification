@@ -10,6 +10,7 @@ import os
 import matplotlib.pyplot as plt
 
 # Constants
+DATASET_LOCATION = 'dataset'
 FIGURES_LOCATION = 'figures'
 TEXTS_LOCATION = 'texts'
 
@@ -36,3 +37,10 @@ def write_dictionary(dictionary, file_name):
     ''' Writes a dictionary to the specified file, as an indented JSON '''
     with open(os.path.join(TEXTS_LOCATION, file_name), 'w') as f:
         f.write(json.dumps(dictionary, indent=4))
+
+def read_dictionary(file_name):
+    ''' Reads the dictionary specified in JSON format from the specified file '''
+    with open(os.path.join(TEXTS_LOCATION, file_name), 'r') as f:
+        dictionary = json.load(f)
+    
+    return dictionary
