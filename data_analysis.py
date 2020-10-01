@@ -45,4 +45,5 @@ samples_information = OrderedDict({k: v for k, v in sorted(samples_information.i
 
 # Write analysis information to files
 utils.write_dictionary(sorted_classes_counts, 'car_brands_samples_counts.txt')
+utils.write_dictionary(top10_classes_counts, 'top_10_brands_samples_counts.txt')
 utils.write_dictionary(samples_information, 'top_brands_samples_information.txt')
