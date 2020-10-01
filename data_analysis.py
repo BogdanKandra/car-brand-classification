@@ -27,9 +27,9 @@ samples_information = {}
 for car_brand in top10_classes_counts.keys():
     print('> Computing sample counts for brand: {}...'.format(car_brand))
     images_names = os.listdir(os.path.join(utils.DATASET_LOCATION, car_brand))
-    models = set([name.split('_')[1] for name in images_names])
+    models = set(['-'.join(name.split('_')[1:-1]) for name in images_names])
     for car_model in models:
-        years = set([name.split('_')[2] for name in images_names if car_model in name])
+        years = set([name.split('_')[-1] for name in images_names if car_model == '-'.join(name.split('_')[1:-1])])
         for year in years:
             samples_count = len([name for name in images_names if car_model in name and year in name])
             key = car_brand + '|' + car_model + '|' + year
@@ -38,8 +38,8 @@ for car_brand in top10_classes_counts.keys():
 samples_information = OrderedDict({k: v for k, v in sorted(samples_information.items(), key=lambda item: item[0])})
 
 # Plot the classes and their sample counts
-# utils.save_bar_plot('All Classes Counts', 'Class Name', 'Sample Count', list(sorted_classes_counts.keys()), sorted_classes_counts.values(), 'b', 'All_Classes_Counts')
-# utils.save_bar_plot('Top 10 Classes Counts', 'Class Name', 'Sample Count', list(top10_classes_counts.keys()), top10_classes_counts.values(), 'b', 'Top_10_Classes_Counts')
+utils.save_bar_plot('All Classes Counts', 'Class Name', 'Sample Count', list(sorted_classes_counts.keys()), sorted_classes_counts.values(), 'b', 'All_Classes_Counts')
+utils.save_bar_plot('Top 10 Classes Counts', 'Class Name', 'Sample Count', list(top10_classes_counts.keys()), top10_classes_counts.values(), 'b', 'Top_10_Classes_Counts')
 # utils.show_bar_plot(0, 'All Classes Counts', 'Class Name', 'Sample Count', list(sorted_classes_counts.keys()), sorted_classes_counts.values(), 'b')
 # utils.show_bar_plot(1, 'Top 10 Classes Counts', 'Class Name', 'Sample Count', list(top10_classes_counts.keys()), top10_classes_counts.values(), 'b')
 
