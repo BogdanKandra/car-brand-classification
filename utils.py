@@ -13,6 +13,9 @@ import matplotlib.pyplot as plt
 DATASET_LOCATION = 'dataset'
 FIGURES_LOCATION = 'figures'
 TEXTS_LOCATION = 'texts'
+TRAINING_DIR = 'training_data'
+TEST_SET_LOCATION = 'test'
+TRAIN_SET_LOCATION = 'train'
 
 def save_bar_plot(title, xlabel, ylabel, xdata, ydata, color='r', plot_name='figure'):
     ''' Generates a bar plot using the given data and saves it to disk '''
