@@ -27,11 +27,14 @@ samples_information = {}
 for car_brand in top10_classes_counts.keys():
     print('> Computing sample counts for brand: {}...'.format(car_brand))
     images_names = os.listdir(os.path.join(utils.DATASET_LOCATION, car_brand))
-    models = set(['-'.join(name.split('_')[1:-1]) for name in images_names])
+    all_model_names = ['-'.join(name.split('_')[1:-2]) for name in images_names]
+    all_model_years = [name.split('_')[-2] for name in images_names]
+
+    models = set(all_model_names)
     for car_model in models:
-        years = set([name.split('_')[-1] for name in images_names if car_model == '-'.join(name.split('_')[1:-1])])
+        years = set([all_model_years[i] for i in range(len(images_names)) if car_model == all_model_names[i]])
         for year in years:
-            samples_count = len([name for name in images_names if car_model in name and year in name])
+            samples_count = len([i for i in range(len(images_names)) if car_model == all_model_names[i] and year == all_model_years[i]])
             key = car_brand + '|' + car_model + '|' + year
             samples_information[key] = samples_count
 
@@ -44,6 +47,6 @@ utils.save_bar_plot('Top 10 Classes Counts', 'Class Name', 'Sample Count', list(
 # utils.show_bar_plot(1, 'Top 10 Classes Counts', 'Class Name', 'Sample Count', list(top10_classes_counts.keys()), top10_classes_counts.values(), 'b')
 
 # Write analysis information to files
-utils.write_dictionary(sorted_classes_counts, 'car_brands_samples_counts.txt')
+utils.write_dictionary(sorted_classes_counts, 'all_brands_samples_counts.txt')
 utils.write_dictionary(top10_classes_counts, 'top_10_brands_samples_counts.txt')
-utils.write_dictionary(samples_information, 'top_brands_samples_information.txt')
+utils.write_dictionary(samples_information, 'top_10_brands_samples_information.txt')
