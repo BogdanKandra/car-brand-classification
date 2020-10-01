@@ -22,6 +22,14 @@ is_dir_predicate = lambda path: os.path.isdir(os.path.join(ORIGINAL_DATASET_LOCA
 dataset_directories = list(filter(is_dir_predicate, os.listdir(ORIGINAL_DATASET_LOCATION)))
 car_brands = set([directory.split('_')[0] for directory in dataset_directories])
 
+# Create the directory corresponding to the reorganized dataset location
+try:
+    os.mkdir(REORGANIZED_DATASET_LOCATION)
+except FileExistsError:
+    # Delete the directory and all of its contents and create it anew
+    shutil.rmtree(REORGANIZED_DATASET_LOCATION, ignore_errors=True)
+    os.mkdir(REORGANIZED_DATASET_LOCATION)
+
 # For each car brand, collect all images representing that brand,
 # rename them appropriately and copy them to a directory in the new location
 for brand in car_brands:
@@ -30,12 +38,7 @@ for brand in car_brands:
 
     # Create directory corresponding to the current car brand in the new dataset location
     directory_path = os.path.join(REORGANIZED_DATASET_LOCATION, brand)
-    try:
-        os.mkdir(directory_path)
-    except FileExistsError:
-        # Delete the directory and all its contents and create it anew
-        shutil.rmtree(directory_path, ignore_errors=True)
-        os.mkdir(directory_path)
+    os.mkdir(directory_path)
 
     for brand_directory in brand_directories:
         print('>>>>> Processing directory: {}...'.format(brand_directory))
