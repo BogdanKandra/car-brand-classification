@@ -27,7 +27,7 @@ samples_information = {}
 for car_brand in top10_classes_counts.keys():
     print('> Computing sample counts for brand: {}...'.format(car_brand))
     images_names = os.listdir(os.path.join(utils.DATASET_LOCATION, car_brand))
-    all_model_names = ['-'.join(name.split('_')[1:-2]) for name in images_names]
+    all_model_names = ['_'.join(name.split('_')[1:-2]) for name in images_names]
     all_model_years = [name.split('_')[-2] for name in images_names]
 
     models = set(all_model_names)
