@@ -7,6 +7,10 @@ import os
 import shutil
 import numpy as np
 import utils
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# Constants
+TOP10_BRANDS_FILE = 'top_10_brands_samples_information.txt'
 
 def train_test_split(train_size=0.8, random_state=None):
     ''' Splits the data specified in the top_brands_samples_information
@@ -27,7 +31,7 @@ def train_test_split(train_size=0.8, random_state=None):
     train_image_names, test_image_names = [], []
 
     # Stratify the data by brand, model and year
-    samples_information = utils.read_dictionary('top_10_brands_samples_information.txt')
+    samples_information = utils.read_dictionary(TOP10_BRANDS_FILE)
 
     for key in samples_information.keys():
         brand, model, year = key.split('|')
@@ -54,7 +58,7 @@ def copy_files_helper(training_set_subdirectory, class_name, file_names):
     directory and class name directory '''
     for file_name in file_names:
         original_image_path = os.path.join(utils.DATASET_LOCATION, class_name, file_name)
-        new_image_path = os.path.join(utils.TRAINING_DIR, training_set_subdirectory, class_name, file_name)
+        new_image_path = os.path.join(training_set_subdirectory, class_name, file_name)
 
         if os.path.exists(original_image_path + '.jpg'):
             extension = '.jpg'
@@ -91,16 +95,16 @@ def create_training_data_directory_structure(train_names, test_names, delete_dat
         shutil.rmtree(utils.TRAINING_DIR, ignore_errors=True)
         os.mkdir(utils.TRAINING_DIR)
 
-    os.mkdir(os.path.join(utils.TRAINING_DIR, utils.TRAIN_SET_LOCATION))
-    os.mkdir(os.path.join(utils.TRAINING_DIR, utils.TEST_SET_LOCATION))
+    os.mkdir(utils.TRAIN_SET_LOCATION)
+    os.mkdir(utils.TEST_SET_LOCATION)
 
     # For each class, create a corresponding directory in both the train
     # and test directories and copy the specified files in them
     class_names = set([image_name.split('_')[0] for image_name in test_names])
 
     for class_name in class_names:
-        os.mkdir(os.path.join(utils.TRAINING_DIR, utils.TRAIN_SET_LOCATION, class_name))
-        os.mkdir(os.path.join(utils.TRAINING_DIR, utils.TEST_SET_LOCATION, class_name))
+        os.mkdir(os.path.join(utils.TRAIN_SET_LOCATION, class_name))
+        os.mkdir(os.path.join(utils.TEST_SET_LOCATION, class_name))
 
         print('> Copying train images for {}...'.format(class_name))
         train_files = [train_name for train_name in train_names if train_name.startswith(class_name)]
@@ -118,8 +122,12 @@ def load_data():
     ''' '''
     pass
 
-# Split the data files into training and testing sets
-train_image_names, test_image_names = train_test_split(0.8, 64)
 
-# Create directory structure for loading the training data in Keras
-create_training_data_directory_structure(train_image_names, test_image_names, True)
+if __name__ == '__main__':
+    # Split the data files into training and testing sets
+    train_image_names, test_image_names = train_test_split(0.8, 64)
+
+    # Create directory structure for loading the training data in Keras
+    create_training_data_directory_structure(train_image_names, test_image_names, True)
+
+    train_data_generator = ImageDataGenerator()
