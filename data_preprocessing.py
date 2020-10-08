@@ -7,10 +7,15 @@ import os
 import shutil
 import numpy as np
 import utils
+import time
+from PIL import Image
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 # Constants
-TOP10_BRANDS_FILE = 'top_10_brands_samples_information.txt'
+HEIGHT = 224
+WIDTH = 224
+TOP10_BRANDS_COUNTS = 'top_10_brands_samples_counts.txt'
+TOP10_BRANDS_INFORMATION = 'top_10_brands_samples_information.txt'
 
 def train_test_split(train_size=0.8, random_state=None):
     ''' Splits the data specified in the top_brands_samples_information
@@ -24,14 +29,14 @@ def train_test_split(train_size=0.8, random_state=None):
         RandomState instance, so that the results are reproducible
 
     Returns:
-        tuple of two lists -- the training and testing data
+        tuple of four lists -- the training and testing data and labels
     '''
     # Initialize necessary variables
     np.random.seed(random_state)
-    train_image_names, test_image_names = [], []
+    train_image_names, test_image_names, train_labels, test_labels = [], [], [], []
 
     # Stratify the data by brand, model and year
-    samples_information = utils.read_dictionary(TOP10_BRANDS_FILE)
+    samples_information = utils.read_dictionary(TOP10_BRANDS_INFORMATION)
 
     for key in samples_information.keys():
         brand, model, year = key.split('|')
@@ -50,7 +55,13 @@ def train_test_split(train_size=0.8, random_state=None):
         train_image_names.extend(key_train_image_names)
         test_image_names.extend(key_test_image_names)
 
-    return train_image_names, test_image_names
+        # Generate and append the labels
+        key_train_labels = training_count * [brand]
+        key_test_labels = (count - training_count) * [brand]
+        train_labels.extend(key_train_labels)
+        test_labels.extend(key_test_labels)
+
+    return train_image_names, test_image_names, train_labels, test_labels
 
 def copy_files_helper(training_set_subdirectory, class_name, file_names):
     ''' Helper function which copies the files specified in file_names, from
@@ -118,16 +129,93 @@ def create_training_data_directory_structure(train_names, test_names, delete_dat
     if delete_dataset is True:
         shutil.rmtree(utils.DATASET_LOCATION)
 
-def load_data():
-    ''' '''
-    pass
+def load_data_helper(image_names):
+    ''' Helper function which loads the files specified in image_names, from
+    the original dataset directory '''
+    images = []
 
+    for image_name in image_names:
+        class_name = image_name[:image_name.index('_')]
+        image_path = os.path.join(utils.DATASET_LOCATION, class_name, image_name)
+        if os.path.exists(image_path + '.jpg'):
+            extension = '.jpg'
+        else:
+            extension = '.png'
+        image_path += extension
+
+        image = Image.open(image_path).convert('RGB').resize((WIDTH, HEIGHT), Image.BILINEAR)
+        images.append(np.array(image))
+
+    return np.array(images)
+
+def load_data(train_image_names, test_image_names):
+    ''' Loads the images specified by the *train_image_names* and
+    *test_image_names* lists into train and test NumPy arrays
+
+    Arguments:
+        *train_image_names* (list of str) -- specifies the names of the files
+        to be loaded as the train set
+
+        *test_image_names* (list of str) -- specifies the names of the files
+        to be loaded as the test set
+
+    Returns:
+        tuple of two NumPy arrays -- the training and testing sets
+    '''
+    print('> Loading train data...')
+    X_train = load_data_helper(train_image_names)
+    print('> Loading test data...')
+    X_test = load_data_helper(test_image_names)
+
+    return X_train, X_test
 
 if __name__ == '__main__':
     # Split the data files into training and testing sets
-    train_image_names, test_image_names = train_test_split(0.8, 64)
+    print('>>> Splitting the data into training and testing sets...')
+    start_split = time.time()
+    train_image_names, test_image_names, y_train, y_test = train_test_split(0.8, 64)
+    end_split = time.time()
+    print('>>> Splitting took {}'.format(end_split - start_split))
 
-    # Create directory structure for loading the training data in Keras
-    create_training_data_directory_structure(train_image_names, test_image_names, True)
 
-    train_data_generator = ImageDataGenerator()
+
+
+
+    ########## To delete
+    # # Load the data
+    # print('>>> Loading the data...')
+    # start_load = time.time()
+    # X_train, X_test = load_data(train_image_names, test_image_names)
+    # end_load = time.time()
+    # print('>>> Loading took {}'.format(end_load - start_load))
+
+    # # Create directory structure for loading the training data in Keras
+    # create_training_data_directory_structure(train_image_names, test_image_names, True)
+
+    # # Create Keras data generators and iterators
+    # samples_counts = utils.read_dictionary(TOP10_BRANDS_COUNTS)
+
+    # data_generator = ImageDataGenerator(
+    #     featurewise_center=True,
+    #     featurewise_std_normalization=True,
+    #     rescale=1./255
+    # ) # The augmentation is the same for both train and test sets, so a single generator is used
+
+    # train_generator = data_generator.flow_from_directory(
+    #     directory='data/train',
+    #     target_size=(224, 224), # Size of MobileNet inputs
+    #     color_mode='rgb',
+    #     classes=list(samples_counts.keys()),
+    #     class_mode='categorical',
+    #     batch_size=32,
+    #     shuffle=False
+    # )
+    # test_generator = data_generator.flow_from_directory(
+    #     directory='data/test',
+    #     target_size=(224, 224), # Size of MobileNet inputs
+    #     color_mode='rgb',
+    #     classes=list(samples_counts.keys()),
+    #     class_mode='categorical',
+    #     batch_size=32,
+    #     shuffle=False
+    # )
