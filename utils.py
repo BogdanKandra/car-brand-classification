@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 # Constants
 DATASET_LOCATION = 'dataset'
 FIGURES_LOCATION = 'figures'
+ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Cars')
 TEXTS_LOCATION = 'texts'
 TRAINING_DIR = 'training_data'
 TEST_SET_LOCATION = os.path.join(TRAINING_DIR, 'test')
