@@ -266,49 +266,6 @@ def subsample_data(random_state=None):
 
 
 
-### Flagged for deletion
-def load_data_helper(image_names):
-    ''' Helper function which loads the files specified in image_names, from
-    the original dataset directory '''
-    images = []
-
-    for image_name in image_names:
-        class_name = image_name[:image_name.index('_')]
-        image_path = os.path.join(utils.DATASET_LOCATION, class_name, image_name)
-        if os.path.exists(image_path + '.jpg'):
-            extension = '.jpg'
-        else:
-            extension = '.png'
-        image_path += extension
-
-        image = Image.open(image_path).convert('RGB').resize((utils.RESIZE_WIDTH, utils.RESIZE_HEIGHT), Image.BILINEAR)
-        images.append(np.array(image))
-
-    return np.array(images)
-
-def load_data(train_image_names, test_image_names):
-    ''' Loads the images specified by the *train_image_names* and
-    *test_image_names* lists into train and test NumPy arrays
-
-    Arguments:
-        *train_image_names* (list of str) -- specifies the names of the files
-        to be loaded as the train set
-
-        *test_image_names* (list of str) -- specifies the names of the files
-        to be loaded as the test set
-
-    Returns:
-        tuple of two NumPy arrays -- the training and testing sets
-    '''
-    print('> Loading train data...')
-    X_train = load_data_helper(train_image_names)
-    print('> Loading test data...')
-    X_test = load_data_helper(test_image_names)
-
-    return X_train, X_test
-
-
-
 ##### Algorithm
 if __name__ == '__main__':
     # # Create the reorganized dataset structure ('dataset' directory)
@@ -342,7 +299,7 @@ if __name__ == '__main__':
     # Subsample the training dataset for computing necessary statistics for preprocessing
     print('>>> Subsampling the training dataset...')
     start_subsampling = time.time()
-    X_sample = subsample_data(64)
+    X_sample = subsample_data(random_state=64)
     end_subsampling = time.time()
     print('>>> Subsampling took {}'.format(end_subsampling - start_subsampling))
 
@@ -373,13 +330,3 @@ if __name__ == '__main__':
         batch_size=32,
         shuffle=False
     )
-
-
-
-    ########## To delete
-    # # Load the data
-    # print('>>> Loading the data...')
-    # start_load = time.time()
-    # X_train, X_test = load_data(train_image_names, test_image_names)
-    # end_load = time.time()
-    # print('>>> Loading took {}'.format(end_load - start_load))
