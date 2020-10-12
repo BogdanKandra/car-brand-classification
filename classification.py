@@ -250,6 +250,8 @@ def subsample_data(random_state=None):
         image_names.extend(key_subsample_image_names)
 
     print('> Loading the images...')
+    loaded_images = 0
+    tenth_of_images = len(image_names) // 10
     for image_name in image_names:
         class_name = image_name[:image_name.index('_')]
         image_path = os.path.join(utils.DATASET_LOCATION, class_name, image_name)
@@ -261,6 +263,10 @@ def subsample_data(random_state=None):
 
         image = Image.open(image_path).convert('RGB').resize((utils.RESIZE_WIDTH, utils.RESIZE_HEIGHT), Image.BILINEAR)
         images.append(np.array(image))
+        loaded_images += 1
+
+        if loaded_images % tenth_of_images == 0:
+            print('> Loaded {}% of images'.format(loaded_images // tenth_of_images * 10))
 
     return np.array(images)
 
