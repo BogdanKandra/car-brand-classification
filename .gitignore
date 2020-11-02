@@ -2,3 +2,4 @@
 __pycache__/
 dataset/
 training_data/
+augmented_data/
