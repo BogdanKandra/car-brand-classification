@@ -302,7 +302,7 @@ if __name__ == '__main__':
     # end_dir_structuring = time.time()
     # print('>>> Creating the directory structure took {}'.format(end_dir_structuring - start_dir_structuring))
 
-    # Subsample the training dataset for computing necessary statistics for preprocessing
+    # Subsample the training dataset for computing statistics necessary for preprocessing
     print('>>> Subsampling the training dataset...')
     start_subsampling = time.time()
     X_sample = subsample_data(random_state=64)
@@ -314,25 +314,34 @@ if __name__ == '__main__':
 
     data_generator = ImageDataGenerator(
         featurewise_center=True,
-        featurewise_std_normalization=True,
-        rescale=1./255
+        featurewise_std_normalization=True
     ) # The augmentation is the same for both train and test sets, so a single generator is used
 
-    train_generator = data_generator.flow_from_directory(
-        directory='data/train',
+    data_generator.fit(X_sample)
+
+    train_iterator = data_generator.flow_from_directory(
+        directory='training_data/train',
         target_size=(224, 224), # Size of MobileNet inputs
         color_mode='rgb',
         classes=list(samples_counts.keys()),
         class_mode='categorical',
         batch_size=32,
-        shuffle=False
+        shuffle=True,
+        seed=64,
+        save_to_dir='augmented_data/train',
+        interpolation='bilinear'
     )
-    test_generator = data_generator.flow_from_directory(
-        directory='data/test',
+    test_iterator = data_generator.flow_from_directory(
+        directory='training_data/test',
         target_size=(224, 224), # Size of MobileNet inputs
         color_mode='rgb',
         classes=list(samples_counts.keys()),
         class_mode='categorical',
         batch_size=32,
-        shuffle=False
+        shuffle=True,
+        seed=64,
+        save_to_dir='augmented_data/test',
+        interpolation='bilinear'
     )
+
+    X_batch, y_batch = train_iterator.next()
