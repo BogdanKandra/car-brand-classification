@@ -1,0 +1,12 @@
+{
+    "ford": 41203,
+    "chevrolet": 37001,
+    "toyota": 24354,
+    "honda": 23681,
+    "nissan": 19125,
+    "dodge": 15501,
+    "volkswagen": 9959,
+    "jeep": 8987,
+    "bmw": 8848,
+    "hyundai": 6463
+}
