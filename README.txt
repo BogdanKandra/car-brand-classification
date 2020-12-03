@@ -1,6 +1,7 @@
 CREATING AN ENVIRONMENT FOR RUNNING THE PROJECT:
 =============================
--> Create environment using: conda create car-brand-classification
+-> Create environment using: conda create --name car-brand-classification python=3.8
+	-> Python version 3.8 is required since Tensorflow doesn't currently support Python versions newer than 3.8
 -> Activate environment using: conda activate car-brand-classification
 -> Install pip in the newly created environment: conda install pip
 -> Install dependencies from requirements.txt: pip install -r requirements.txt
