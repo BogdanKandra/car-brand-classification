@@ -274,33 +274,35 @@ def subsample_data(random_state=None):
 
 ##### Algorithm
 if __name__ == '__main__':
-    # # Create the reorganized dataset structure ('dataset' directory)
-    # print('>>> Reorganizing the dataset and creating "dataset" directory...')
-    # start_acquisition = time.time()
-    # data_acquisition()
-    # end_acquisition = time.time()
-    # print('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
+    # Only run the preprocessing steps if the "dataset" directory is not present
+    if os.path.isdir(utils.DATASET_LOCATION) is False:
+        # Create the reorganized dataset structure ('dataset' directory)
+        print('>>> Reorganizing the dataset and creating "dataset" directory...')
+        start_acquisition = time.time()
+        data_acquisition()
+        end_acquisition = time.time()
+        print('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
 
-    # # Analyze the dataset
-    # print('>>> Analyzing the dataset...')
-    # start_analysis = time.time()
-    # data_analysis(save_plots=True)
-    # end_analysis = time.time()
-    # print('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
+        # Analyze the dataset
+        print('>>> Analyzing the dataset...')
+        start_analysis = time.time()
+        data_analysis(save_plots=True)
+        end_analysis = time.time()
+        print('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
 
-    # # Split the data files into training and testing sets
-    # print('>>> Splitting the data into training and testing sets...')
-    # start_split = time.time()
-    # train_image_names, test_image_names, y_train, y_test = train_test_split(0.8, 64)
-    # end_split = time.time()
-    # print('>>> Splitting took {}\n'.format(end_split - start_split))
+        # Split the data files into training and testing sets
+        print('>>> Splitting the data into training and testing sets...')
+        start_split = time.time()
+        train_image_names, test_image_names, y_train, y_test = train_test_split(0.8, 64)
+        end_split = time.time()
+        print('>>> Splitting took {}\n'.format(end_split - start_split))
 
-    # # Create directory structure for loading the training data in Keras
-    # print('>>> Creating Keras data directories structure...')
-    # start_dir_structuring = time.time()
-    # create_training_data_directory_structure(train_image_names, test_image_names)
-    # end_dir_structuring = time.time()
-    # print('>>> Creating the directory structure took {}\n'.format(end_dir_structuring - start_dir_structuring))
+        # Create directory structure for loading the training data in Keras
+        print('>>> Creating Keras data directories structure...')
+        start_dir_structuring = time.time()
+        create_training_data_directory_structure(train_image_names, test_image_names)
+        end_dir_structuring = time.time()
+        print('>>> Creating the directory structure took {}\n'.format(end_dir_structuring - start_dir_structuring))
 
     # Subsample the training dataset for computing statistics necessary for preprocessing
     print('>>> Subsampling the training dataset...')
@@ -325,6 +327,7 @@ if __name__ == '__main__':
 
     data_generator.fit(X_sample)
     end_data_generator = time.time()
+    del X_sample
     print('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
 
     print('>>> Defining train iterator...')
