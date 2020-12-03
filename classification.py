@@ -311,9 +311,10 @@ if __name__ == '__main__':
 
     # Create Keras data generators and iterators
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS)
-    os.mkdir(utils.AUGMENTED_DIR)
-    os.mkdir(utils.TEST_AUGMENT_LOCATION)
-    os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
+    if os.path.isdir(utils.AUGMENTED_DIR) is False:
+        os.mkdir(utils.AUGMENTED_DIR)
+        os.mkdir(utils.TEST_AUGMENT_LOCATION)
+        os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
 
     print('>>> Defining and Fitting the Data Generator...')
     start_data_generator = time.time()
