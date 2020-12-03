@@ -279,48 +279,57 @@ if __name__ == '__main__':
     # start_acquisition = time.time()
     # data_acquisition()
     # end_acquisition = time.time()
-    # print('>>> Reorganizing the dataset took {}'.format(end_acquisition - start_acquisition))
+    # print('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
 
     # # Analyze the dataset
     # print('>>> Analyzing the dataset...')
     # start_analysis = time.time()
     # data_analysis(save_plots=True)
     # end_analysis = time.time()
-    # print('>>> Analyzing the dataset took {}'.format(end_analysis - start_analysis))
+    # print('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
 
     # # Split the data files into training and testing sets
     # print('>>> Splitting the data into training and testing sets...')
     # start_split = time.time()
     # train_image_names, test_image_names, y_train, y_test = train_test_split(0.8, 64)
     # end_split = time.time()
-    # print('>>> Splitting took {}'.format(end_split - start_split))
+    # print('>>> Splitting took {}\n'.format(end_split - start_split))
 
     # # Create directory structure for loading the training data in Keras
     # print('>>> Creating Keras data directories structure...')
     # start_dir_structuring = time.time()
     # create_training_data_directory_structure(train_image_names, test_image_names)
     # end_dir_structuring = time.time()
-    # print('>>> Creating the directory structure took {}'.format(end_dir_structuring - start_dir_structuring))
+    # print('>>> Creating the directory structure took {}\n'.format(end_dir_structuring - start_dir_structuring))
 
     # Subsample the training dataset for computing statistics necessary for preprocessing
     print('>>> Subsampling the training dataset...')
     start_subsampling = time.time()
     X_sample = subsample_data(random_state=64)
     end_subsampling = time.time()
-    print('>>> Subsampling took {}'.format(end_subsampling - start_subsampling))
+    print('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
 
     # Create Keras data generators and iterators
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS)
+    os.mkdir(utils.AUGMENTED_DIR)
+    os.mkdir(utils.TEST_AUGMENT_LOCATION)
+    os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
 
+    print('>>> Defining and Fitting the Data Generator...')
+    start_data_generator = time.time()
     data_generator = ImageDataGenerator(
         featurewise_center=True,
         featurewise_std_normalization=True
     ) # The augmentation is the same for both train and test sets, so a single generator is used
 
     data_generator.fit(X_sample)
+    end_data_generator = time.time()
+    print('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
 
+    print('>>> Defining train iterator...')
+    start_train_it = time.time()
     train_iterator = data_generator.flow_from_directory(
-        directory='training_data/train',
+        directory=utils.TRAIN_SET_LOCATION,
         target_size=(224, 224), # Size of MobileNet inputs
         color_mode='rgb',
         classes=list(samples_counts.keys()),
@@ -328,11 +337,16 @@ if __name__ == '__main__':
         batch_size=32,
         shuffle=True,
         seed=64,
-        save_to_dir='augmented_data/train',
+        save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
+    end_train_it = time.time()
+    print('>>> Defining the train iterator took {}\n'.format(end_train_it - start_train_it))
+
+    print('>>> Defining test iterator...')
+    start_test_it = time.time()
     test_iterator = data_generator.flow_from_directory(
-        directory='training_data/test',
+        directory=utils.TEST_SET_LOCATION,
         target_size=(224, 224), # Size of MobileNet inputs
         color_mode='rgb',
         classes=list(samples_counts.keys()),
@@ -340,8 +354,10 @@ if __name__ == '__main__':
         batch_size=32,
         shuffle=True,
         seed=64,
-        save_to_dir='augmented_data/test',
+        save_to_dir=utils.TEST_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
+    end_test_it = time.time()
+    print('>>> Defining the test iterator took {}\n'.format(end_test_it - start_test_it))
 
     X_batch, y_batch = train_iterator.next()
