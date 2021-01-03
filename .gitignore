@@ -1,5 +1,7 @@
 .vscode/
 __pycache__/
-dataset/
-training_data/
 augmented_data/
+dataset/
+figures/
+texts/
+training_data/
