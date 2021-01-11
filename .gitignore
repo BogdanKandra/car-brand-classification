@@ -3,5 +3,6 @@ __pycache__/
 augmented_data/
 dataset/
 figures/
+pickles/
 texts/
 training_data/
