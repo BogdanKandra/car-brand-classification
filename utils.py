@@ -22,9 +22,12 @@ TRAIN_SET_LOCATION = os.path.join(TRAINING_DIR, 'train')
 AUGMENTED_DIR = 'augmented_data'
 TEST_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'test')
 TRAIN_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'train')
+
 ALL_BRANDS_COUNTS_NAME = 'all_brands_samples_counts.txt'
 TOP10_BRANDS_COUNTS_NAME = 'top_10_brands_samples_counts.txt'
 TOP10_BRANDS_INFORMATION_NAME = 'top_10_brands_samples_information.txt'
+SUBSAMPLE_ARRAY_NAME = 'subsample.npy'
+
 TRAIN_SET_PERCENTAGE = 0.8
 SUBSAMPLE_PERCENTAGE = 0.1
 RANDOM_STATE = 64
