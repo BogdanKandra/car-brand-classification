@@ -10,16 +10,20 @@ import os
 import matplotlib.pyplot as plt
 import numpy as np
 
+
 # Constants
-ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Cars')
-DATASET_LOCATION = 'dataset'
-FIGURES_LOCATION = 'figures'
-PICKLES_LOCATION = 'pickles'
-TEXTS_LOCATION = 'texts'
-TRAINING_DIR = 'training_data'
+PROJECT_PATH = os.getcwd()
+while os.path.basename(PROJECT_PATH) != 'car-brand-classification':
+    PROJECT_PATH = os.path.dirname(PROJECT_PATH)
+ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(PROJECT_PATH), 'Data', 'Cars')
+DATASET_LOCATION = os.path.join(PROJECT_PATH, 'dataset')
+FIGURES_LOCATION = os.path.join(PROJECT_PATH, 'figures')
+PICKLES_LOCATION = os.path.join(PROJECT_PATH, 'pickles')
+TEXTS_LOCATION = os.path.join(PROJECT_PATH, 'texts')
+TRAINING_DIR = os.path.join(PROJECT_PATH, 'training_data')
 TEST_SET_LOCATION = os.path.join(TRAINING_DIR, 'test')
 TRAIN_SET_LOCATION = os.path.join(TRAINING_DIR, 'train')
-AUGMENTED_DIR = 'augmented_data'
+AUGMENTED_DIR = os.path.join(PROJECT_PATH, 'augmented_data')
 TEST_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'test')
 TRAIN_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'train')
 
