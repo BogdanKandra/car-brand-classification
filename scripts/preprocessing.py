@@ -4,6 +4,7 @@ Created on Fri Oct  9 16:57:51 2020
 @author: Bogdan
 '''
 from collections import OrderedDict
+import logging
 import os
 import shutil
 import time
@@ -11,6 +12,10 @@ import utils
 import numpy as np
 from PIL import Image
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+
+LOGGER = logging.getLogger(__name__)
+
 
 def data_acquisition():
     ''' Reorganizes the original dataset, which was organized into 9170
@@ -36,7 +41,7 @@ def data_acquisition():
     # For each car brand, collect all images representing that brand,
     # rename them appropriately and copy them to a directory in the new location
     for brand in car_brands:
-        print('> Processing brand: {}...'.format(brand))
+        LOGGER.info('> Processing brand: {}...'.format(brand))
         brand_directories = [directory for directory in dataset_directories if directory.startswith(brand)]
 
         # Create directory corresponding to the current car brand in the new dataset location
@@ -44,7 +49,7 @@ def data_acquisition():
         os.mkdir(directory_path)
 
         for brand_directory in brand_directories:
-            print('>> Processing directory: {}...'.format(brand_directory))
+            LOGGER.info('>> Processing directory: {}...'.format(brand_directory))
             brand_directory_path = os.path.join(utils.ORIGINAL_DATASET_LOCATION, brand_directory)
             image_names = os.listdir(brand_directory_path)
 
@@ -76,7 +81,7 @@ def data_analysis(save_plots=False):
     samples_information = {}
 
     for car_brand in top10_classes_counts.keys():
-        print('> Computing sample counts for brand: {}...'.format(car_brand))
+        LOGGER.info('> Computing sample counts for brand: {}...'.format(car_brand))
         images_names = os.listdir(os.path.join(utils.DATASET_LOCATION, car_brand))
         all_model_names = ['_'.join(name.split('_')[1:-2]) for name in images_names]
         all_model_years = [name.split('_')[-2] for name in images_names]
@@ -208,11 +213,11 @@ def prepare_training_dataset(train_names, test_names, delete_dataset=False):
         os.mkdir(os.path.join(utils.TRAIN_SET_LOCATION, class_name))
         os.mkdir(os.path.join(utils.TEST_SET_LOCATION, class_name))
 
-        print('> Preparing train images for {}...'.format(class_name))
+        LOGGER.info('> Preparing train images for {}...'.format(class_name))
         train_files = [train_name for train_name in train_names if train_name.startswith(class_name)]
         preparation_helper(utils.TRAIN_SET_LOCATION, class_name, train_files)
 
-        print('> Preparing test images for {}...'.format(class_name))
+        LOGGER.info('> Preparing test images for {}...'.format(class_name))
         test_files = [test_name for test_name in test_names if test_name.startswith(class_name)]
         preparation_helper(utils.TEST_SET_LOCATION, class_name, test_files)
 
@@ -243,7 +248,7 @@ def subsample_data(data_percentage, random_state=None):
     # Stratify the data by brand, model and year
     samples_information = utils.read_dictionary(utils.TOP10_BRANDS_INFORMATION_NAME)
 
-    print('> Randomly choosing files for subsampling...')
+    LOGGER.info('> Randomly choosing files for subsampling...')
     for key in samples_information.keys():
         brand, model, year = key.split('|')
         count = samples_information[key]
@@ -258,7 +263,7 @@ def subsample_data(data_percentage, random_state=None):
         key_subsample_image_names = [image_base_name + str(index) for index in subsampling_indices]
         image_names.extend(key_subsample_image_names)
 
-    print('> Loading the images...')
+    LOGGER.info('> Loading the images...')
     loaded_images = 0
     tenth_of_images = len(image_names) // 10
     for image_name in image_names:
@@ -277,7 +282,7 @@ def subsample_data(data_percentage, random_state=None):
         loaded_images += 1
 
         if loaded_images % tenth_of_images == 0:
-            print('> Loaded {}% of images'.format(loaded_images // tenth_of_images * 10))
+            LOGGER.info('> Loaded {}% of images'.format(loaded_images // tenth_of_images * 10))
 
     return np.array(images)
 
@@ -290,53 +295,54 @@ if __name__ == '__main__':
     if os.path.isdir(utils.DATASET_LOCATION) is False:
 
         # Create the reorganized dataset structure ("dataset" directory)
-        print('>>> Reorganizing the dataset and creating "dataset" directory...')
+        LOGGER.info('>>> Reorganizing the dataset and creating "dataset" directory...')
         start_acquisition = time.time()
         data_acquisition()
         end_acquisition = time.time()
-        print('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
+        LOGGER.info('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
 
         # Analyze the dataset and save the results in the "figures" and "texts" directories
-        print('>>> Analyzing the dataset...')
+        LOGGER.info('>>> Analyzing the dataset...')
         start_analysis = time.time()
         data_analysis(save_plots=True)
         end_analysis = time.time()
-        print('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
+        LOGGER.info('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
 
         # Split the names of the data files into training and testing sets
-        print('>>> Splitting the data into training and testing sets...')
+        LOGGER.info('>>> Splitting the data into training and testing sets...')
         start_split = time.time()
         train_image_names, test_image_names, y_train, y_test = train_test_split(utils.TRAIN_SET_PERCENTAGE, utils.RANDOM_STATE)
         end_split = time.time()
-        print('>>> Splitting took {}\n'.format(end_split - start_split))
+        LOGGER.info('>>> Splitting took {}\n'.format(end_split - start_split))
 
         # Create the training data directory structure for loading in Keras and resize images
-        print('>>> Preparing the training dataset...')
+        LOGGER.info('>>> Preparing the training dataset...')
         start_preparation = time.time()
         prepare_training_dataset(train_image_names, test_image_names)
         end_preparation = time.time()
-        print('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
+        LOGGER.info('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
     else:
-        print('>>> "dataset" directory already present; skipping data preprocessing.')
+        LOGGER.info('>>> "dataset" directory already present; skipping data preprocessing.')
 
     # Only perform the training data subsampling if the "pickles" directory is not present
     if os.path.isdir(utils.PICKLES_LOCATION) is False:
+        os.mkdir(utils.PICKLES_LOCATION)
 
         # Subsample the training dataset for computing statistics necessary for preprocessing
-        print('>>> Subsampling the training dataset...')
+        LOGGER.info('>>> Subsampling the training dataset...')
         start_subsampling = time.time()
         X_sample = subsample_data(utils.SUBSAMPLE_PERCENTAGE, utils.RANDOM_STATE)
         end_subsampling = time.time()
-        print('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
+        LOGGER.info('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
 
         # Pickle the subsampled data for later uploading on Google Drive
-        print('>>> Serializing the subsampled data...')
+        LOGGER.info('>>> Serializing the subsampled data...')
         start_serializing = time.time()
         utils.write_numpy_array(X_sample, utils.SUBSAMPLE_ARRAY_NAME)
         end_serializing = time.time()
-        print('>>> Serializing took {}\n'.format(end_serializing - start_serializing))
+        LOGGER.info('>>> Serializing took {}\n'.format(end_serializing - start_serializing))
     else:
-        print('>>> "pickles" directory already present... skipping data subsampling.')
+        LOGGER.info('>>> "pickles" directory already present... skipping data subsampling.')
 
     # Create Keras data generators and iterators
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
@@ -345,7 +351,7 @@ if __name__ == '__main__':
         os.mkdir(utils.TEST_AUGMENT_LOCATION)
         os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
 
-    print('>>> Defining and Fitting the Data Generator...')
+    LOGGER.info('>>> Defining and Fitting the Data Generator...')
     start_data_generator = time.time()
     # The augmentation is the same for both train and test sets, so a single generator is used
     data_generator = ImageDataGenerator(
@@ -356,9 +362,9 @@ if __name__ == '__main__':
     data_generator.fit(X_sample)
     end_data_generator = time.time()
     del X_sample
-    print('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
+    LOGGER.info('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
 
-    print('>>> Defining train iterator...')
+    LOGGER.info('>>> Defining train iterator...')
     start_train_it = time.time()
     train_iterator = data_generator.flow_from_directory(
         directory=utils.TRAIN_SET_LOCATION,
@@ -373,9 +379,9 @@ if __name__ == '__main__':
         interpolation='bilinear'
     )
     end_train_it = time.time()
-    print('>>> Defining the train iterator took {}\n'.format(end_train_it - start_train_it))
+    LOGGER.info('>>> Defining the train iterator took {}\n'.format(end_train_it - start_train_it))
 
-    print('>>> Defining test iterator...')
+    LOGGER.info('>>> Defining test iterator...')
     start_test_it = time.time()
     test_iterator = data_generator.flow_from_directory(
         directory=utils.TEST_SET_LOCATION,
@@ -390,6 +396,6 @@ if __name__ == '__main__':
         interpolation='bilinear'
     )
     end_test_it = time.time()
-    print('>>> Defining the test iterator took {}\n'.format(end_test_it - start_test_it))
+    LOGGER.info('>>> Defining the test iterator took {}\n'.format(end_test_it - start_test_it))
 
     X_batch, y_batch = train_iterator.next()
