@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-# Constants
+### Constants
 PROJECT_PATH = os.getcwd()
 while os.path.basename(PROJECT_PATH) != 'car-brand-classification':
     PROJECT_PATH = os.path.dirname(PROJECT_PATH)
@@ -38,7 +38,8 @@ RANDOM_STATE = 64
 RESIZE_HEIGHT = 56
 RESIZE_WIDTH = 56
 
-# Utility functions
+
+### Utility functions
 def save_bar_plot(title, xlabel, ylabel, xdata, ydata, color='r', plot_name='figure'):
     ''' Generates a bar plot using the given data and saves it to disk '''
     plt.figure(0, figsize=(19.2, 10.8))

@@ -2,6 +2,9 @@
 Created on Fri Oct  9 16:57:51 2020
 
 @author: Bogdan
+
+This script performs the dataset reorganization, preprocessing and analysis
+required for training the image classifier
 '''
 from collections import OrderedDict
 import logging
@@ -14,9 +17,11 @@ from PIL import Image
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
+### Set logging level and define logger
+logging.basicConfig(level=logging.DEBUG)
 LOGGER = logging.getLogger(__name__)
 
-
+### Functions
 def data_acquisition():
     ''' Reorganizes the original dataset, which was organized into 9170
     directories named following the pattern <carBrand_carModel_modelYear>. Since
@@ -361,7 +366,7 @@ if __name__ == '__main__':
 
     data_generator.fit(X_sample)
     end_data_generator = time.time()
-    del X_sample
+#    del X_sample
     LOGGER.info('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
 
     LOGGER.info('>>> Defining train iterator...')
@@ -399,3 +404,5 @@ if __name__ == '__main__':
     LOGGER.info('>>> Defining the test iterator took {}\n'.format(end_test_it - start_test_it))
 
     X_batch, y_batch = train_iterator.next()
+
+    print('>>> Are subsamples equal? {}'.format(np.array_equal(X_sample, utils.read_numpy_array(utils.SUBSAMPLE_ARRAY_NAME))))
