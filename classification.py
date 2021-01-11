@@ -60,7 +60,7 @@ def data_acquisition():
 def data_analysis(save_plots=False):
     ''' Performs data analysis. The top 10 car classes are determined, in terms
     of number of samples, and for each of the top classes, the number of samples
-    from each model and year are computed. These information are ploted and
+    from each model and year are computed. These information are plotted and
     written to files
     '''
     # Determine the top 10 classes
@@ -150,10 +150,10 @@ def train_test_split(train_size=0.8, random_state=None):
 
     return train_image_names, test_image_names, train_labels, test_labels
 
-def copy_files_helper(training_set_subdirectory, class_name, file_names):
-    ''' Helper function which copies the files specified in file_names, from
-    the original dataset directory to the specified subset of the training data
-    directory and class name directory '''
+def preparation_helper(training_set_subdirectory, class_name, file_names):
+    ''' Helper function which copies and resizes the files specified in
+    file_names, from the original dataset directory to the specified subset of
+    the training data directory and class name directory '''
     for file_name in file_names:
         original_image_path = os.path.join(utils.DATASET_LOCATION, class_name, file_name)
         new_image_path = os.path.join(training_set_subdirectory, class_name, file_name)
@@ -166,9 +166,13 @@ def copy_files_helper(training_set_subdirectory, class_name, file_names):
         original_image_path += extension
         new_image_path += extension
 
-        shutil.copyfile(original_image_path, new_image_path)
+        # Load the image from the original path, resize it and save the resulting image
+        Image.open(original_image_path) \
+             .convert('RGB') \
+             .resize((utils.RESIZE_WIDTH, utils.RESIZE_HEIGHT), Image.BICUBIC) \
+             .save(new_image_path)
 
-def create_training_data_directory_structure(train_names, test_names, delete_dataset=False):
+def prepare_training_dataset(train_names, test_names, delete_dataset=False):
     ''' Creates the directory structure necessary for loading the training data
     in Keras
 
@@ -204,28 +208,33 @@ def create_training_data_directory_structure(train_names, test_names, delete_dat
         os.mkdir(os.path.join(utils.TRAIN_SET_LOCATION, class_name))
         os.mkdir(os.path.join(utils.TEST_SET_LOCATION, class_name))
 
-        print('> Copying train images for {}...'.format(class_name))
+        print('> Preparing train images for {}...'.format(class_name))
         train_files = [train_name for train_name in train_names if train_name.startswith(class_name)]
-        copy_files_helper(utils.TRAIN_SET_LOCATION, class_name, train_files)
+        preparation_helper(utils.TRAIN_SET_LOCATION, class_name, train_files)
 
-        print('> Copying test images for {}...'.format(class_name))
+        print('> Preparing test images for {}...'.format(class_name))
         test_files = [test_name for test_name in test_names if test_name.startswith(class_name)]
-        copy_files_helper(utils.TEST_SET_LOCATION, class_name, test_files)
+        preparation_helper(utils.TEST_SET_LOCATION, class_name, test_files)
 
     # Delete the original dataset, if required
     if delete_dataset is True:
         shutil.rmtree(utils.DATASET_LOCATION)
 
-def subsample_data(random_state=None):
-    ''' Randomly picks 5% of the data specified in the top_brands_samples_information
-    dictionary and loads them for fitting the Keras ImageDataGenerator
+def subsample_data(data_percentage, random_state=None):
+    ''' Randomly picks <data_percentage> % of the data specified in the
+    top_brands_samples_information dictionary and loads them for fitting the
+    Keras ImageDataGenerator (using the same preprocessing as used on the
+    training data)
 
     Arguments:
+        *data_percentage* (float) -- specifies the percentage of the data to be
+        chosen for subsampling; value must be between 0 and 1
+
         *random_state* (int) -- specifies the seed to be used with the
         RandomState instance, so that the results are reproducible
 
     Returns:
-        NumPy array -- the subsample
+        NumPy array -- the subsampled data
     '''
     # Initialize necessary variables
     np.random.seed(random_state)
@@ -238,7 +247,7 @@ def subsample_data(random_state=None):
     for key in samples_information.keys():
         brand, model, year = key.split('|')
         count = samples_information[key]
-        subsampling_count = int(0.05 * count) if count > 39 else 1
+        subsampling_count = int(data_percentage * count) if count > 39 else 1
 
         # Generate indices permutation for selecting subsample data
         available_indices = np.random.permutation(count)
@@ -261,7 +270,9 @@ def subsample_data(random_state=None):
             extension = '.png'
         image_path += extension
 
-        image = Image.open(image_path).convert('RGB').resize((utils.RESIZE_WIDTH, utils.RESIZE_HEIGHT), Image.BILINEAR)
+        image = Image.open(image_path) \
+                     .convert('RGB') \
+                     .resize((utils.RESIZE_WIDTH, utils.RESIZE_HEIGHT), Image.BICUBIC)
         images.append(np.array(image))
         loaded_images += 1
 
@@ -276,38 +287,40 @@ def subsample_data(random_state=None):
 if __name__ == '__main__':
     # Only run the preprocessing steps if the "dataset" directory is not present
     if os.path.isdir(utils.DATASET_LOCATION) is False:
-        # Create the reorganized dataset structure ('dataset' directory)
+        # Create the reorganized dataset structure ("dataset" directory)
         print('>>> Reorganizing the dataset and creating "dataset" directory...')
         start_acquisition = time.time()
         data_acquisition()
         end_acquisition = time.time()
         print('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
 
-        # Analyze the dataset
+        # Analyze the dataset and save the results in the "figures" and "texts" directories
         print('>>> Analyzing the dataset...')
         start_analysis = time.time()
         data_analysis(save_plots=True)
         end_analysis = time.time()
         print('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
 
-        # Split the data files into training and testing sets
+        # Split the names of the data files into training and testing sets
         print('>>> Splitting the data into training and testing sets...')
         start_split = time.time()
-        train_image_names, test_image_names, y_train, y_test = train_test_split(0.8, 64)
+        train_image_names, test_image_names, y_train, y_test = train_test_split(utils.TRAIN_SET_PERCENTAGE, utils.RANDOM_STATE)
         end_split = time.time()
         print('>>> Splitting took {}\n'.format(end_split - start_split))
 
-        # Create directory structure for loading the training data in Keras
-        print('>>> Creating Keras data directories structure...')
-        start_dir_structuring = time.time()
-        create_training_data_directory_structure(train_image_names, test_image_names)
-        end_dir_structuring = time.time()
-        print('>>> Creating the directory structure took {}\n'.format(end_dir_structuring - start_dir_structuring))
+        # Create the training data directory structure for loading in Keras and resize images
+        print('>>> Preparing the training dataset...')
+        start_preparation = time.time()
+        prepare_training_dataset(train_image_names, test_image_names)
+        end_preparation = time.time()
+        print('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
+    else:
+        print('>>> "dataset" directory present; data preprocessing skipped.')
 
     # Subsample the training dataset for computing statistics necessary for preprocessing
     print('>>> Subsampling the training dataset...')
     start_subsampling = time.time()
-    X_sample = subsample_data(random_state=64)
+    X_sample = subsample_data(utils.SUBSAMPLE_PERCENTAGE, utils.RANDOM_STATE)
     end_subsampling = time.time()
     print('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
 
@@ -320,10 +333,11 @@ if __name__ == '__main__':
 
     print('>>> Defining and Fitting the Data Generator...')
     start_data_generator = time.time()
+    # The augmentation is the same for both train and test sets, so a single generator is used
     data_generator = ImageDataGenerator(
         featurewise_center=True,
         featurewise_std_normalization=True
-    ) # The augmentation is the same for both train and test sets, so a single generator is used
+    )
 
     data_generator.fit(X_sample)
     end_data_generator = time.time()
@@ -334,13 +348,13 @@ if __name__ == '__main__':
     start_train_it = time.time()
     train_iterator = data_generator.flow_from_directory(
         directory=utils.TRAIN_SET_LOCATION,
-        target_size=(224, 224), # Size of MobileNet inputs
+        target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
         color_mode='rgb',
         classes=list(samples_counts.keys()),
         class_mode='categorical',
         batch_size=32,
         shuffle=True,
-        seed=64,
+        seed=utils.RANDOM_STATE,
         save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
@@ -351,13 +365,13 @@ if __name__ == '__main__':
     start_test_it = time.time()
     test_iterator = data_generator.flow_from_directory(
         directory=utils.TEST_SET_LOCATION,
-        target_size=(224, 224), # Size of MobileNet inputs
+        target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
         color_mode='rgb',
         classes=list(samples_counts.keys()),
         class_mode='categorical',
         batch_size=32,
         shuffle=True,
-        seed=64,
+        seed=utils.RANDOM_STATE,
         save_to_dir=utils.TEST_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
