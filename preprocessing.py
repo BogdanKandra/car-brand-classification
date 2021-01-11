@@ -317,12 +317,18 @@ if __name__ == '__main__':
     else:
         print('>>> "dataset" directory present; data preprocessing skipped.')
 
+    # Only perform the training data subsampling if the "pickles" directory is not present
+    # TODO
+
     # Subsample the training dataset for computing statistics necessary for preprocessing
     print('>>> Subsampling the training dataset...')
     start_subsampling = time.time()
     X_sample = subsample_data(utils.SUBSAMPLE_PERCENTAGE, utils.RANDOM_STATE)
     end_subsampling = time.time()
     print('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
+
+    # Pickle the subsampled data for later uploading on Google Drive
+    # TODO
 
     # Create Keras data generators and iterators
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS)
