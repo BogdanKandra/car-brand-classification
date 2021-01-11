@@ -22,8 +22,11 @@ TEST_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'test')
 TRAIN_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'train')
 TOP10_BRANDS_COUNTS = 'top_10_brands_samples_counts.txt'
 TOP10_BRANDS_INFORMATION = 'top_10_brands_samples_information.txt'
-RESIZE_HEIGHT = 224
-RESIZE_WIDTH = 224
+TRAIN_SET_PERCENTAGE = 0.8
+SUBSAMPLE_PERCENTAGE = 0.1
+RANDOM_STATE = 64
+RESIZE_HEIGHT = 56
+RESIZE_WIDTH = 56
 
 # Utility functions
 def save_bar_plot(title, xlabel, ylabel, xdata, ydata, color='r', plot_name='figure'):
