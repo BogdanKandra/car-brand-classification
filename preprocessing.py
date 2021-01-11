@@ -100,9 +100,9 @@ def data_analysis(save_plots=False):
         utils.show_bar_plot(1, 'Top 10 Classes Counts', 'Class Name', 'Sample Count', list(top10_classes_counts.keys()), top10_classes_counts.values(), 'b')
 
     # Write analysis information to files
-    utils.write_dictionary(sorted_classes_counts, 'all_brands_samples_counts.txt')
-    utils.write_dictionary(top10_classes_counts, 'top_10_brands_samples_counts.txt')
-    utils.write_dictionary(samples_information, 'top_10_brands_samples_information.txt')
+    utils.write_dictionary(sorted_classes_counts, utils.ALL_BRANDS_COUNTS_NAME)
+    utils.write_dictionary(top10_classes_counts, utils.TOP10_BRANDS_COUNTS_NAME)
+    utils.write_dictionary(samples_information, utils.TOP10_BRANDS_INFORMATION_NAME)
 
 def train_test_split(train_size=0.8, random_state=None):
     ''' Splits the data specified in the top_brands_samples_information
@@ -123,7 +123,7 @@ def train_test_split(train_size=0.8, random_state=None):
     train_image_names, test_image_names, train_labels, test_labels = [], [], [], []
 
     # Stratify the data by brand, model and year
-    samples_information = utils.read_dictionary(utils.TOP10_BRANDS_INFORMATION)
+    samples_information = utils.read_dictionary(utils.TOP10_BRANDS_INFORMATION_NAME)
 
     for key in samples_information.keys():
         brand, model, year = key.split('|')
@@ -241,7 +241,7 @@ def subsample_data(data_percentage, random_state=None):
     images, image_names = [], []
 
     # Stratify the data by brand, model and year
-    samples_information = utils.read_dictionary(utils.TOP10_BRANDS_INFORMATION)
+    samples_information = utils.read_dictionary(utils.TOP10_BRANDS_INFORMATION_NAME)
 
     print('> Randomly choosing files for subsampling...')
     for key in samples_information.keys():
@@ -285,8 +285,10 @@ def subsample_data(data_percentage, random_state=None):
 
 ##### Algorithm
 if __name__ == '__main__':
+
     # Only run the preprocessing steps if the "dataset" directory is not present
     if os.path.isdir(utils.DATASET_LOCATION) is False:
+
         # Create the reorganized dataset structure ("dataset" directory)
         print('>>> Reorganizing the dataset and creating "dataset" directory...')
         start_acquisition = time.time()
@@ -315,23 +317,29 @@ if __name__ == '__main__':
         end_preparation = time.time()
         print('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
     else:
-        print('>>> "dataset" directory present; data preprocessing skipped.')
+        print('>>> "dataset" directory already present; skipping data preprocessing.')
 
     # Only perform the training data subsampling if the "pickles" directory is not present
-    # TODO
+    if os.path.isdir(utils.PICKLES_LOCATION) is False:
 
-    # Subsample the training dataset for computing statistics necessary for preprocessing
-    print('>>> Subsampling the training dataset...')
-    start_subsampling = time.time()
-    X_sample = subsample_data(utils.SUBSAMPLE_PERCENTAGE, utils.RANDOM_STATE)
-    end_subsampling = time.time()
-    print('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
+        # Subsample the training dataset for computing statistics necessary for preprocessing
+        print('>>> Subsampling the training dataset...')
+        start_subsampling = time.time()
+        X_sample = subsample_data(utils.SUBSAMPLE_PERCENTAGE, utils.RANDOM_STATE)
+        end_subsampling = time.time()
+        print('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
 
-    # Pickle the subsampled data for later uploading on Google Drive
-    # TODO
+        # Pickle the subsampled data for later uploading on Google Drive
+        print('>>> Serializing the subsampled data...')
+        start_serializing = time.time()
+        utils.write_numpy_array(X_sample, utils.SUBSAMPLE_ARRAY_NAME)
+        end_serializing = time.time()
+        print('>>> Serializing took {}\n'.format(end_serializing - start_serializing))
+    else:
+        print('>>> "pickles" directory already present... skipping data subsampling.')
 
     # Create Keras data generators and iterators
-    samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS)
+    samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
     if os.path.isdir(utils.AUGMENTED_DIR) is False:
         os.mkdir(utils.AUGMENTED_DIR)
         os.mkdir(utils.TEST_AUGMENT_LOCATION)
