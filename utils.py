@@ -8,11 +8,13 @@ This script contains utility functions
 import json
 import os
 import matplotlib.pyplot as plt
+import numpy as np
 
 # Constants
 ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(os.getcwd()), 'Data', 'Cars')
 DATASET_LOCATION = 'dataset'
 FIGURES_LOCATION = 'figures'
+PICKLES_LOCATION = 'pickles'
 TEXTS_LOCATION = 'texts'
 TRAINING_DIR = 'training_data'
 TEST_SET_LOCATION = os.path.join(TRAINING_DIR, 'test')
@@ -20,8 +22,9 @@ TRAIN_SET_LOCATION = os.path.join(TRAINING_DIR, 'train')
 AUGMENTED_DIR = 'augmented_data'
 TEST_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'test')
 TRAIN_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'train')
-TOP10_BRANDS_COUNTS = 'top_10_brands_samples_counts.txt'
-TOP10_BRANDS_INFORMATION = 'top_10_brands_samples_information.txt'
+ALL_BRANDS_COUNTS_NAME = 'all_brands_samples_counts.txt'
+TOP10_BRANDS_COUNTS_NAME = 'top_10_brands_samples_counts.txt'
+TOP10_BRANDS_INFORMATION_NAME = 'top_10_brands_samples_information.txt'
 TRAIN_SET_PERCENTAGE = 0.8
 SUBSAMPLE_PERCENTAGE = 0.1
 RANDOM_STATE = 64
@@ -51,7 +54,7 @@ def show_bar_plot(figure_index, title, xlabel, ylabel, xdata, ydata, color='r'):
     plt.show()
 
 def write_dictionary(dictionary, file_name):
-    ''' Writes a dictionary to the specified file, as an indented JSON '''
+    ''' Writes a dictionary to the specified file, in indented JSON format '''
     if os.path.isdir(TEXTS_LOCATION) is False:
         os.mkdir(TEXTS_LOCATION)
     with open(os.path.join(TEXTS_LOCATION, file_name), 'w') as f:
@@ -63,3 +66,17 @@ def read_dictionary(file_name):
         dictionary = json.load(f)
     
     return dictionary
+
+def write_numpy_array(array, file_name):
+    ''' Writes a NumPy array to the specified file '''
+    if os.path.isdir(PICKLES_LOCATION) is False:
+        os.mkdir(PICKLES_LOCATION)
+    with open(os.path.join(PICKLES_LOCATION, file_name), 'wb') as f:
+        np.save(f, array, allow_pickle=False, fix_imports=False)
+
+def read_numpy_array(file_name):
+    ''' Reads the NumPy array from the specified file '''
+    with open(os.path.join(PICKLES_LOCATION, file_name), 'rb') as f:
+        array = np.load(f, fix_imports=False)
+
+    return array
