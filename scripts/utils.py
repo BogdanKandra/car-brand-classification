@@ -75,14 +75,14 @@ def read_dictionary(file_name):
     
     return dictionary
 
-def write_numpy_array(array, file_name):
+def save_numpy_array(array, file_name):
     ''' Writes a NumPy array to the specified file '''
     if os.path.isdir(PICKLES_LOCATION) is False:
         os.mkdir(PICKLES_LOCATION)
     with open(os.path.join(PICKLES_LOCATION, file_name), 'wb') as f:
         np.save(f, array, allow_pickle=False, fix_imports=False)
 
-def read_numpy_array(file_name):
+def load_numpy_array(file_name):
     ''' Reads the NumPy array from the specified file '''
     with open(os.path.join(PICKLES_LOCATION, file_name), 'rb') as f:
         array = np.load(f, fix_imports=False)
