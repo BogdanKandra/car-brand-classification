@@ -18,7 +18,7 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
 ### Set logging level and define logger
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 ### Functions
@@ -327,7 +327,7 @@ if __name__ == '__main__':
         end_preparation = time.time()
         LOGGER.info('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
     else:
-        LOGGER.info('>>> "dataset" directory already present; skipping data preprocessing.')
+        LOGGER.info('>>> "dataset" directory already present... skipping data preprocessing')
 
     # Only perform the training data subsampling if the "pickles" directory is not present
     if os.path.isdir(utils.PICKLES_LOCATION) is False:
@@ -343,11 +343,12 @@ if __name__ == '__main__':
         # Pickle the subsampled data for later uploading on Google Drive
         LOGGER.info('>>> Serializing the subsampled data...')
         start_serializing = time.time()
-        utils.write_numpy_array(X_sample, utils.SUBSAMPLE_ARRAY_NAME)
+        utils.save_numpy_array(X_sample, utils.SUBSAMPLE_ARRAY_NAME)
         end_serializing = time.time()
         LOGGER.info('>>> Serializing took {}\n'.format(end_serializing - start_serializing))
     else:
-        LOGGER.info('>>> "pickles" directory already present... skipping data subsampling.')
+        LOGGER.info('>>> "pickles" directory already present... loading saved data subsample')
+        X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
 
     # Create Keras data generators and iterators
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
@@ -366,7 +367,7 @@ if __name__ == '__main__':
 
     data_generator.fit(X_sample)
     end_data_generator = time.time()
-#    del X_sample
+    del X_sample
     LOGGER.info('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
 
     LOGGER.info('>>> Defining train iterator...')
@@ -404,5 +405,3 @@ if __name__ == '__main__':
     LOGGER.info('>>> Defining the test iterator took {}\n'.format(end_test_it - start_test_it))
 
     X_batch, y_batch = train_iterator.next()
-
-    print('>>> Are subsamples equal? {}'.format(np.array_equal(X_sample, utils.read_numpy_array(utils.SUBSAMPLE_ARRAY_NAME))))
