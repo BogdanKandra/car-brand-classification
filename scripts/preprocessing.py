@@ -14,7 +14,6 @@ import time
 import utils
 import numpy as np
 from PIL import Image
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 
 ### Set logging level and define logger
@@ -91,8 +90,8 @@ def data_analysis(save_plots=False):
         all_model_names = ['_'.join(name.split('_')[1:-2]) for name in images_names]
         all_model_years = [name.split('_')[-2] for name in images_names]
 
-        models = set(all_model_names)
-        for car_model in models:
+        car_models = set(all_model_names)
+        for car_model in car_models:
             years = set([all_model_years[i] for i in range(len(images_names)) if car_model == all_model_names[i]])
             for year in years:
                 samples_count = len([i for i in range(len(images_names)) if car_model == all_model_names[i] and year == all_model_years[i]])
@@ -349,59 +348,3 @@ if __name__ == '__main__':
     else:
         LOGGER.info('>>> "pickles" directory already present... loading saved data subsample')
         X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
-
-    # Create Keras data generators and iterators
-    samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
-    if os.path.isdir(utils.AUGMENTED_DIR) is False:
-        os.mkdir(utils.AUGMENTED_DIR)
-        os.mkdir(utils.TEST_AUGMENT_LOCATION)
-        os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
-
-    LOGGER.info('>>> Defining and Fitting the Data Generator...')
-    start_data_generator = time.time()
-    # The augmentation is the same for both train and test sets, so a single generator is used
-    data_generator = ImageDataGenerator(
-        featurewise_center=True,
-        featurewise_std_normalization=True
-    )
-
-    data_generator.fit(X_sample)
-    end_data_generator = time.time()
-    del X_sample
-    LOGGER.info('>>> Fitting the data generator took {}\n'.format(end_data_generator - start_data_generator))
-
-    LOGGER.info('>>> Defining train iterator...')
-    start_train_it = time.time()
-    train_iterator = data_generator.flow_from_directory(
-        directory=utils.TRAIN_SET_LOCATION,
-        target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
-        color_mode='rgb',
-        classes=list(samples_counts.keys()),
-        class_mode='categorical',
-        batch_size=32,
-        shuffle=True,
-        seed=utils.RANDOM_STATE,
-        save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
-        interpolation='bilinear'
-    )
-    end_train_it = time.time()
-    LOGGER.info('>>> Defining the train iterator took {}\n'.format(end_train_it - start_train_it))
-
-    LOGGER.info('>>> Defining test iterator...')
-    start_test_it = time.time()
-    test_iterator = data_generator.flow_from_directory(
-        directory=utils.TEST_SET_LOCATION,
-        target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
-        color_mode='rgb',
-        classes=list(samples_counts.keys()),
-        class_mode='categorical',
-        batch_size=32,
-        shuffle=True,
-        seed=utils.RANDOM_STATE,
-        save_to_dir=utils.TEST_AUGMENT_LOCATION,
-        interpolation='bilinear'
-    )
-    end_test_it = time.time()
-    LOGGER.info('>>> Defining the test iterator took {}\n'.format(end_test_it - start_test_it))
-
-    X_batch, y_batch = train_iterator.next()
