@@ -6,9 +6,11 @@ Created on Sat Jan  9 13:08:51 2021
 This script performs the training of the image classifier
 '''
 import logging
+import matplotlib.pyplot as plt
 import os
 import time
 import utils
+import tensorflow as tf
 import tensorflow.keras.applications as apps
 from tensorflow.keras import layers, losses, metrics, models, optimizers
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -29,6 +31,10 @@ def load_pretrained_network(network_name):
 
     return base_model
 
+def build_model():
+    ''' Builds the model, starting from the base model '''
+    pass
+
 
 
 ##### Algorithm
@@ -37,52 +43,75 @@ if __name__ == '__main__':
     # Load the data subsample into memory
     X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
 
+    # # Create necessary directories
+    # if os.path.isdir(utils.AUGMENTED_DIR) is False:
+    #     os.mkdir(utils.AUGMENTED_DIR)
+    #     os.mkdir(utils.TEST_AUGMENT_LOCATION)
+    #     os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
+
     # Create Keras data generators and iterators
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
-    if os.path.isdir(utils.AUGMENTED_DIR) is False:
-        os.mkdir(utils.AUGMENTED_DIR)
-        os.mkdir(utils.TEST_AUGMENT_LOCATION)
-        os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
 
     LOGGER.info('>>> Defining and Fitting the Data Generator...')
     start = time.time()
     # The augmentation is the same for both train and test sets, so a single generator is used
-    data_generator = ImageDataGenerator(
+    train_data_generator = ImageDataGenerator(
         featurewise_center=True,
-        featurewise_std_normalization=True
+        featurewise_std_normalization=True,
+        validation_split=0.2
     )
 
-    data_generator.fit(X_sample)
+    test_data_generator = ImageDataGenerator()
+
+    train_data_generator.fit(X_sample)
     end = time.time()
     del X_sample
     LOGGER.info('>>> Fitting the data generator took {}\n'.format(end - start))
 
     LOGGER.info('>>> Defining train iterator...')
     start = time.time()
-    train_iterator = data_generator.flow_from_directory(
+    train_iterator = train_data_generator.flow_from_directory(
         directory=utils.TRAIN_SET_LOCATION,
         target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
         color_mode='rgb',
         classes=list(samples_counts.keys()),
         class_mode='categorical',
-        batch_size=32,
+        batch_size=utils.BATCH_SIZE,
         shuffle=True,
         seed=utils.RANDOM_STATE,
         # save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
+        subset='training',
         interpolation='bilinear'
     )
     end = time.time()
     LOGGER.info('>>> Defining the train iterator took {}\n'.format(end - start))
 
+    LOGGER.info('>>> Defining validation iterator...')
+    start = time.time()
+    validation_iterator = train_data_generator.flow_from_directory(
+        directory=utils.TRAIN_SET_LOCATION,
+        target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
+        color_mode='rgb',
+        classes=list(samples_counts.keys()),
+        class_mode='categorical',
+        batch_size=utils.BATCH_SIZE,
+        shuffle=True,
+        seed=utils.RANDOM_STATE,
+        subset='validation',
+        interpolation='bilinear'
+    )
+    end = time.time()
+    LOGGER.info('>>> Defining the validation iterator took {}\n'.format(end - start))
+
     LOGGER.info('>>> Defining test iterator...')
     start = time.time()
-    test_iterator = data_generator.flow_from_directory(
+    test_iterator = test_data_generator.flow_from_directory(
         directory=utils.TEST_SET_LOCATION,
         target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH), # Size of MobileNet inputs is (224, 224)
         color_mode='rgb',
         classes=list(samples_counts.keys()),
         class_mode='categorical',
-        batch_size=32,
+        batch_size=utils.BATCH_SIZE,
         shuffle=True,
         seed=utils.RANDOM_STATE,
         # save_to_dir=utils.TEST_AUGMENT_LOCATION,
@@ -138,35 +167,94 @@ if __name__ == '__main__':
     #             # Evaluate the model
     #             results = model.evaluate()
 
+    # Define a test model
     base_model = load_pretrained_network('VGG16')
-    model = models.Sequential(
-        [
-            base_model,
-            layers.Flatten(name='flatten'),
-            layers.Dense(1024, activation='relu', name='specialisation_layer'),
-            layers.Dense(10, activation='softmax', name='classification_layer')
-        ]
-    )
+    preprocess_input = apps.vgg16.preprocess_input
+    flatten_layer = layers.Flatten(name='flatten')
+    specialisation_layer = layers.Dense(1024, activation='relu', name='specialisation_layer')
+    classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
 
-    optimizer = optimizers.Adam()
+    inputs = tf.keras.Input(shape=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3))
+    x = preprocess_input(inputs)
+    x = base_model(x)
+    x = flatten_layer(x)
+    x = specialisation_layer(x)
+    outputs = classification_layer(x)
+    model = tf.keras.Model(inputs, outputs)
+
+    model.summary()
+
+    # model = models.Sequential(
+    #     [
+    #         base_model,
+    #         layers.Flatten(name='flatten'),
+    #         layers.Dense(1024, activation='relu', name='specialisation_layer'),
+    #         layers.Dense(10, activation='softmax', name='classification_layer')
+    #     ]
+    # )
+
+    steps_per_epoch = len(train_iterator) // utils.BATCH_SIZE
+    validation_steps = len(validation_iterator) // utils.BATCH_SIZE
+    base_learning_rate = 0.0001 # TODO - scheduler for learning rate
+    optimizer = optimizers.Adam(learning_rate=base_learning_rate)
 
     LOGGER.info('>>> Compiling the model...')
     start = time.time()
-    model.compile(optimizer=optimizer, loss=loss_function, metrics=train_metrics)
+    model.compile(optimizer=optimizer,
+                  loss=loss_function,
+                  metrics=train_metrics)
     end = time.time()
     LOGGER.info('>>> Compiling the model took {}\n'.format(end - start))
 
     LOGGER.info('>>> Training the model...')
+    initial_results = model.evaluate(validation_iterator,
+                                     steps=validation_steps,
+                                     return_dict=True)
+    LOGGER.info('> Initial Results: {}'.format(initial_results))
+
     start = time.time()
-    training_history = model.fit(train_iterator, epochs=10, verbose=0, callbacks=[TqdmCallback(verbose=2)])
+    training_history = model.fit(train_iterator, epochs=10, verbose=0,
+                                 validation_data=validation_iterator,
+                                 callbacks=[TqdmCallback(verbose=2)],
+                                 steps_per_epoch=steps_per_epoch,
+                                 validation_steps=validation_steps)
+    history = training_history.history
     end = time.time()
     LOGGER.info('>>> Training the model took {}\n'.format(end - start))
 
     LOGGER.info('>>> Evaluating the model...')
     start = time.time()
-    results_dict = model.evaluate(test_iterator, return_dict=True, callbacks=[TqdmCallback(verbose=2)])
+    final_results = model.evaluate(test_iterator,
+                                  return_dict=True,
+                                  callbacks=[TqdmCallback(verbose=2)])
+    LOGGER.info('> Final Results: {}'.format(final_results))
     end = time.time()
     LOGGER.info('>>> Evaluating the model took {}\n'.format(end - start))
 
-    LOGGER.info('>>> Training results:\n{}\n'.format(training_history))
-    LOGGER.info('>>> Evaluation results:\n{}\n'.format(results_dict))
+    # Plot training and validation accuracy and loss
+    training_accuracy = history['accuracy']
+    validation_accuracy = history['val_accuracy']
+    training_loss = history['loss']
+    validation_loss = history['val_loss']
+
+    plt.figure(figsize=(18, 10))
+    plt.subplot(2, 1, 1)
+    plt.plot(training_accuracy, label='Training Accuracy')
+    plt.plot(validation_accuracy, label='Validation Accuracy')
+    plt.legend()
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.ylim([min(plt.ylim()), 1])
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(2, 1, 2)
+    plt.plot(training_loss, label='Training Loss')
+    plt.plot(validation_loss, label='Validation Loss')
+    plt.legend()
+    plt.xlabel('Epoch')
+    plt.ylabel('Categorical Cross Entropy')
+    plt.ylim([0, 4.0])
+    plt.title('Training and Validation Loss')
+
+    plt.savefig('Training Results.png', quality=100)
+    plt.close()
