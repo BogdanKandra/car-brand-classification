@@ -229,7 +229,7 @@ def prepare_training_dataset(train_names, test_names, delete_dataset=False):
     if delete_dataset is True:
         shutil.rmtree(utils.DATASET_LOCATION)
 
-def subsample_data(data_percentage, random_state=None):
+def subsample_data(data_percentage=0.1, random_state=None):
     ''' Randomly picks <data_percentage> % of the data specified in the
     top_brands_samples_information dictionary and loads them for fitting the
     Keras ImageDataGenerator (using the same preprocessing as used on the
@@ -292,7 +292,7 @@ def subsample_data(data_percentage, random_state=None):
 
 
 
-##### Algorithm
+##### Main algorithm
 if __name__ == '__main__':
 
     # Only run the preprocessing steps if the "dataset" directory is not present
