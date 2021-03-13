@@ -27,6 +27,7 @@ VALIDATION_SET_LOCATION = os.path.join(TRAINING_DIR, 'validation')
 AUGMENTED_DIR = os.path.join(PROJECT_PATH, 'augmented_data')
 TEST_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'test')
 TRAIN_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'train')
+VALIDATION_AUGMENT_LOCATION = os.path.join(AUGMENTED_DIR, 'validation')
 
 ALL_BRANDS_COUNTS_NAME = 'all_brands_samples_counts.txt'
 TOP10_BRANDS_COUNTS_NAME = 'top_10_brands_samples_counts.txt'
