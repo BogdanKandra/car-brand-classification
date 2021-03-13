@@ -27,7 +27,7 @@ def data_acquisition():
     we are classifying cars by their brand, we reorganize the dataset into 75
     directories, named by car brands and rename images to follow the pattern
     <carBrand_carModel_modelYear_indexNumber>; so that performing a stratified
-    split of the data into training and testing sets is possible
+    split of the data into training, validation and testing sets is possible
     '''
     # Determine the set of car brands
     is_dir_predicate = lambda path: os.path.isdir(os.path.join(utils.ORIGINAL_DATASET_LOCATION, path))
@@ -81,7 +81,7 @@ def data_analysis(save_plots=False):
 
     # For each of the top 10 car classes, compute the number of samples from each
     # model and release year, as a dictionary. Will be used for performing easy
-    # train-test-split stratification of the data
+    # train-validation-test split stratification of the data
     samples_information = {}
 
     for car_brand in top10_classes_counts.keys():
@@ -113,7 +113,7 @@ def data_analysis(save_plots=False):
     utils.write_dictionary(top10_classes_counts, utils.TOP10_BRANDS_COUNTS_NAME)
     utils.write_dictionary(samples_information, utils.TOP10_BRANDS_INFORMATION_NAME)
 
-def train_test_split(train_size=0.8, random_state=None):
+def train_valid_test_split(train_size=0.7, validation_size = 0.1, random_state=None):
     ''' Splits the data specified in the top_brands_samples_information
     dictionary into random training and testing subsets
 
@@ -121,15 +121,19 @@ def train_test_split(train_size=0.8, random_state=None):
         *train_size* (float) -- specifies the percentage of the data to be
         selected for the training set; value must be between 0 and 1
 
+        *validation_size* (float) -- specifies the percentage of the data to be
+        selected for the validation set; value must be between 0 and 1
+
         *random_state* (int) -- specifies the seed to be used with the
         RandomState instance, so that the results are reproducible
 
     Returns:
-        tuple of four lists -- the training and testing data and labels
+        tuple of six lists -- the training, validation and testing data and labels
     '''
     # Initialize necessary variables
     np.random.seed(random_state)
-    train_image_names, test_image_names, train_labels, test_labels = [], [], [], []
+    train_image_names, validation_image_names, test_image_names = [], [], []
+    train_labels, validation_labels, test_labels = [], [], []
 
     # Stratify the data by brand, model and year
     samples_information = utils.read_dictionary(utils.TOP10_BRANDS_INFORMATION_NAME)
@@ -138,26 +142,41 @@ def train_test_split(train_size=0.8, random_state=None):
         brand, model, year = key.split('|')
         count = samples_information[key]
         training_count = int(train_size * count) if count > 1 else 1
+        if count >= 10:
+            validation_count = int(validation_size * count)
+        elif count >= 4:
+            validation_count = 1
+        else:
+            validation_count = 0
 
-        # Generate indices permutation for selecting train and test data
+        # Generate indices permutation for selecting train, validation and test data
         available_indices = np.random.permutation(count)
         train_indices = available_indices[:training_count]
-        test_indices = available_indices[training_count:] if count > 1 else []
+        validation_indices = available_indices[training_count : training_count + validation_count]
+        test_indices = available_indices[training_count + validation_count :]
 
         # Generate and append the relevant image names
         image_base_name = brand + '_' + model + '_' + year + '_'
+
         key_train_image_names = [image_base_name + str(index) for index in train_indices]
-        key_test_image_names = [image_base_name + str(index) for index in test_indices] if count > 1 else []
+        key_validation_image_names = [image_base_name + str(index) for index in validation_indices]
+        key_test_image_names = [image_base_name + str(index) for index in test_indices]
+
         train_image_names.extend(key_train_image_names)
+        validation_image_names.extend(key_validation_image_names)
         test_image_names.extend(key_test_image_names)
 
         # Generate and append the labels
         key_train_labels = training_count * [brand]
-        key_test_labels = (count - training_count) * [brand]
+        key_validation_labels = validation_count * [brand]
+        key_test_labels = (count - training_count - validation_count) * [brand]
+
         train_labels.extend(key_train_labels)
+        validation_labels.extend(key_validation_labels)
         test_labels.extend(key_test_labels)
 
-    return train_image_names, test_image_names, train_labels, test_labels
+    return train_image_names, validation_image_names, test_image_names,\
+           train_labels, validation_labels, test_labels
 
 def preparation_helper(training_set_subdirectory, class_name, file_names):
     ''' Helper function which copies and resizes the files specified in
@@ -181,7 +200,7 @@ def preparation_helper(training_set_subdirectory, class_name, file_names):
              .resize((utils.RESIZE_WIDTH, utils.RESIZE_HEIGHT), Image.BICUBIC) \
              .save(new_image_path)
 
-def prepare_training_dataset(train_names, test_names, delete_dataset=False):
+def prepare_training_dataset(train_names, valid_names, test_names, delete_dataset=False):
     ''' Creates the directory structure necessary for loading the training data
     in Keras
 
@@ -189,8 +208,11 @@ def prepare_training_dataset(train_names, test_names, delete_dataset=False):
         *train_names* (list of str) -- specifies the names of the files from
         the training set
 
-        *test_names* (list of str) -- specifies the names of the files from
-        the test set
+        *valid_names* (list of str) -- specifies the name of the files from the
+        validation set
+
+        *test_names* (list of str) -- specifies the names of the files from the
+        testing set
 
         *delete_dataset* (boolean) -- specifies whether the original dataset
         directory should be deleted or not
@@ -198,7 +220,8 @@ def prepare_training_dataset(train_names, test_names, delete_dataset=False):
     Returns:
         Nothing
     '''
-    # Create the base directory containing the training and testing sets directories
+    # Create the base directory containing the training, validation and testing
+    # sets directories
     try:
         os.mkdir(utils.TRAINING_DIR)
     except FileExistsError:
@@ -207,19 +230,25 @@ def prepare_training_dataset(train_names, test_names, delete_dataset=False):
         os.mkdir(utils.TRAINING_DIR)
 
     os.mkdir(utils.TRAIN_SET_LOCATION)
+    os.mkdir(utils.VALIDATION_SET_LOCATION)
     os.mkdir(utils.TEST_SET_LOCATION)
 
-    # For each class, create a corresponding directory in both the train
+    # For each class, create a corresponding directory in the train, validation
     # and test directories and copy the specified files in them
     class_names = set([image_name.split('_')[0] for image_name in test_names])
 
     for class_name in class_names:
         os.mkdir(os.path.join(utils.TRAIN_SET_LOCATION, class_name))
+        os.mkdir(os.path.join(utils.VALIDATION_SET_LOCATION, class_name))
         os.mkdir(os.path.join(utils.TEST_SET_LOCATION, class_name))
 
         LOGGER.info('> Preparing train images for {}...'.format(class_name))
         train_files = [train_name for train_name in train_names if train_name.startswith(class_name)]
         preparation_helper(utils.TRAIN_SET_LOCATION, class_name, train_files)
+
+        LOGGER.info('> Preparing validation images for {}...'.format(class_name))
+        valid_files = [valid_name for valid_name in valid_names if valid_name.startswith(class_name)]
+        preparation_helper(utils.VALIDATION_SET_LOCATION, class_name, valid_files)
 
         LOGGER.info('> Preparing test images for {}...'.format(class_name))
         test_files = [test_name for test_name in test_names if test_name.startswith(class_name)]
@@ -229,7 +258,7 @@ def prepare_training_dataset(train_names, test_names, delete_dataset=False):
     if delete_dataset is True:
         shutil.rmtree(utils.DATASET_LOCATION)
 
-def subsample_data(data_percentage=0.1, random_state=None):
+def subsample_data(data_percentage=0.2, random_state=None):
     ''' Randomly picks <data_percentage> % of the data specified in the
     top_brands_samples_information dictionary and loads them for fitting the
     Keras ImageDataGenerator (using the same preprocessing as used on the
@@ -256,7 +285,7 @@ def subsample_data(data_percentage=0.1, random_state=None):
     for key in samples_information.keys():
         brand, model, year = key.split('|')
         count = samples_information[key]
-        subsampling_count = int(data_percentage * count) if count > 39 else 1
+        subsampling_count = int(data_percentage * count) if count >= 10 else 1
 
         # Generate indices permutation for selecting subsample data
         available_indices = np.random.permutation(count)
@@ -270,6 +299,7 @@ def subsample_data(data_percentage=0.1, random_state=None):
     LOGGER.info('> Loading the images...')
     loaded_images = 0
     tenth_of_images = len(image_names) // 10
+    
     for image_name in image_names:
         class_name = image_name[:image_name.index('_')]
         image_path = os.path.join(utils.DATASET_LOCATION, class_name, image_name)
@@ -315,14 +345,14 @@ if __name__ == '__main__':
         # Split the names of the data files into training and testing sets
         LOGGER.info('>>> Splitting the data into training and testing sets...')
         start_split = time.time()
-        train_image_names, test_image_names, y_train, y_test = train_test_split(utils.TRAIN_SET_PERCENTAGE, utils.RANDOM_STATE)
+        names_and_labels = train_valid_test_split(utils.TRAIN_SET_PERCENTAGE, utils.VALIDATION_SET_PERCENTAGE, utils.RANDOM_STATE)
         end_split = time.time()
         LOGGER.info('>>> Splitting took {}\n'.format(end_split - start_split))
 
         # Create the training data directory structure for loading in Keras and resize images
         LOGGER.info('>>> Preparing the training dataset...')
         start_preparation = time.time()
-        prepare_training_dataset(train_image_names, test_image_names)
+        prepare_training_dataset(*names_and_labels[:3])
         end_preparation = time.time()
         LOGGER.info('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
     else:
