@@ -18,6 +18,7 @@ while os.path.basename(PROJECT_PATH) != 'car-brand-classification':
 ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(PROJECT_PATH), 'Data', 'Cars')
 DATASET_LOCATION = os.path.join(PROJECT_PATH, 'dataset')
 FIGURES_LOCATION = os.path.join(PROJECT_PATH, 'figures')
+TRAINING_RESULTS_FIGURES_LOCATION = os.path.join(FIGURES_LOCATION, 'training_results')
 PICKLES_LOCATION = os.path.join(PROJECT_PATH, 'pickles')
 TEXTS_LOCATION = os.path.join(PROJECT_PATH, 'texts')
 TRAINING_DIR = os.path.join(PROJECT_PATH, 'training_data')
