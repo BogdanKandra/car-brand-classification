@@ -19,8 +19,8 @@ RUNNING THE PROJECT:
 =============================
 -> Run "preprocessing.py" for:
 	-> Reorganizing and analysing the dataset
-	-> Splitting the data into training and testing sets
-	-> Performing preprocessing on the training and testing sets
+	-> Splitting the data into training, validation and testing sets
+	-> Performing preprocessing on the training, validation and testing sets
 	-> A subsample is also computed and serialized, so that the Keras image data generator will be able to normalize the input images for training
 -> Upload the newly obtained "training_data" and "pickles" directories to a Google Drive account
 -> Upload the "notebooks" directory to the same Google Drive account
