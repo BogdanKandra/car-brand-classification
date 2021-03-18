@@ -30,6 +30,14 @@ def load_pretrained_network(network_name):
 
     return base_model
 
+def load_input_preprocessing_function(module_name):
+    ''' Loads the input preprocessing function for the specified pretrained
+    network from Keras applications '''
+    network_module = getattr(apps, module_name)
+    preprocess_input_function = getattr(network_module, 'preprocess_input')
+
+    return preprocess_input_function
+
 def build_model():
     ''' Builds the model, starting from the base model '''
     pass
@@ -110,49 +118,9 @@ if __name__ == '__main__':
     end = time.time()
     LOGGER.info('>>> Defining the iterators took {}\n'.format(end - start))
 
-    X_batch, y_batch = train_iterator.next()
+    # X_batch, y_batch = train_iterator.next()
 
-    # Define models, metrics and optimizers to be tested
-    model_names = {
-        'efficientnet': ['EfficientNetB0', 'EfficientNetB3', 'EfficientNetB7'],
-        'mobilenet': ['MobileNet'],
-        'mobilenet_v2': ['MobileNetV2'],
-        'nasnet': ['NASNetMobile'],
-        'resnet50': ['ResNet50'],
-        'resnet_v2': ['ResNet50V2'],
-        'vgg16': ['VGG16']
-    }
-
-    loss_function = losses.CategoricalCrossentropy()
-    train_metrics = [metrics.Accuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
-    train_optimizers = [optimizers.Adam(), optimizers.RMSprop(), optimizers.Adadelta()]
-
-    # # Perform training for each model and optimizer
-    # for module in model_names.keys():
-    #     for network in model_names[module]:
-    #         base_model = load_pretrained_network(network)
-    #         # Complete the model
-    #         model = models.Sequential(
-    #             [
-    #                 base_model,
-    #                 layers.Flatten(name='flatten'),
-    #                 layers.Dense(1024, activation='relu', name='specialisation_layer'),
-    #                 layers.Dense(10, activation='softmax', name='classification_layer')
-    #             ]
-    #         )
-    #         # base - pooling - dropout (0.2) - dense (num_classes)
-    #         # base - flatten - dense (256) - dropout (0.5) - dense (num_classes)
-    #         # base - flatten - dense (1024) - dropout(0.5) - dense (num_classes)
-
-    #         for optimizer in train_optimizers:
-    #             # Compile the model
-    #             model.compile(optimizer=optimizer, loss=loss_function, metrics=train_metrics)
-    #             # Fit the model
-    #             training_history = model.fit(train_iterator, epochs=50, verbose=2)
-    #             # Evaluate the model
-    #             results = model.evaluate()
-
-    # Define a test model
+    # Define test layers
     preprocess_input = apps.vgg16.preprocess_input
     base_model = load_pretrained_network('VGG16')
     flatten_layer = layers.Flatten(name='flatten')
@@ -162,10 +130,11 @@ if __name__ == '__main__':
     dropout_layer = layers.Dropout(0.5, name='dropout_layer')
     classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
 
+    # Define test model
     inputs = tf.keras.Input(shape=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3))
     x = preprocess_input(inputs)
     x = base_model(x, training=False)
-    x = max_pooling_layer(x)
+    x = avg_pooling_layer(x)
     # x = flatten_layer(x)
     # x = specialisation_layer(x)
     x = dropout_layer(x)
@@ -174,19 +143,22 @@ if __name__ == '__main__':
 
     model.summary()
 
+    # Define train parameters
     steps_per_epoch = len(train_iterator)
     validation_steps = len(validation_iterator)
-    base_learning_rate = 0.0001 # TODO - scheduler for learning rate
+    base_learning_rate = 0.001 # TODO - scheduler for learning rate
     optimizer = optimizers.Adam(learning_rate=base_learning_rate)
+    loss_function = losses.CategoricalCrossentropy()
+    train_metrics = [metrics.Accuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
 
     model.compile(optimizer=optimizer,
                   loss=loss_function,
                   metrics=train_metrics)
 
     LOGGER.info('>>> Training the model...')
-    initial_results = model.evaluate(test_iterator,
-                                     return_dict=True)
-    LOGGER.info('>>>>> Initial Results: {}'.format(initial_results))
+    # initial_results = model.evaluate(test_iterator,
+    #                                  return_dict=True)
+    # LOGGER.info('>>>>> Initial Results: {}'.format(initial_results))
 
     start = time.time()
     training_history = model.fit(train_iterator, epochs=20, verbose=1,
@@ -230,5 +202,9 @@ if __name__ == '__main__':
     plt.ylim([0, max(plt.ylim())])
     plt.title('Training and Validation Loss')
 
-    plt.savefig('Training Results.png', quality=100)
+    if os.path.isdir(utils.TRAINING_RESULTS_FIGURES_LOCATION) is False:
+        os.mkdir(utils.TRAINING_RESULTS_FIGURES_LOCATION)
+
+    figure_path = os.path.join(utils.TRAINING_RESULTS_FIGURES_LOCATION, 'Training Results.png')
+    plt.savefig(figure_path, quality=100)
     plt.close()
