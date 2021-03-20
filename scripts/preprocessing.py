@@ -258,7 +258,7 @@ def prepare_training_dataset(train_names, valid_names, test_names, delete_datase
     if delete_dataset is True:
         shutil.rmtree(utils.DATASET_LOCATION)
 
-def subsample_data(data_percentage=0.2, random_state=None):
+def subsample_data(data_percentage=0.1, random_state=None):
     ''' Randomly picks <data_percentage> % of the data specified in the
     top_brands_samples_information dictionary and loads them for fitting the
     Keras ImageDataGenerator (using the same preprocessing as used on the
