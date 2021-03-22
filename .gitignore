@@ -4,5 +4,6 @@ augmented_data/
 dataset/
 figures/
 pickles/
+teachable_machine_data/
 texts/
 training_data/
