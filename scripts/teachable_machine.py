@@ -20,7 +20,7 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 ### Functions
-def preparation_helper(training_set_subdirectory, file_names):
+def copy_images(training_set_subdirectory, file_names):
     ''' Helper function which copies the files specified in file_names, from
     the training_data subdirectory to the corresponding teachable_machine_data
     subdirectory '''
@@ -29,7 +29,7 @@ def preparation_helper(training_set_subdirectory, file_names):
         new_image_path = os.path.join(utils.TEACHABLE_MACHINE_DIR, training_set_subdirectory, file_name)
         shutil.copyfile(original_image_path, new_image_path)
 
-def prepare_teachable_machine_dataset(data_percentage=0.4, random_state=None):
+def prepare_dataset_imbalanced(data_percentage=0.4, random_state=None):
     ''' Randomly picks <data_percentage> % of the data in the training set and
     and copies them to a separate directory, to be used directly for upload to
     Teachable Machine
@@ -71,11 +71,16 @@ def prepare_teachable_machine_dataset(data_percentage=0.4, random_state=None):
         relevant_image_names = [image_names[i] for i in subsampling_indices]
 
         # Copy the images from the source directory to a separate directory
-        preparation_helper(brand, relevant_image_names)
+        copy_images(brand, relevant_image_names)
+
+def prepare_dataset_balanced(target_count=50000, random_state=None):
+    ''' '''
+    pass
 
 
 
 ##### Main algorithm
 if __name__ == '__main__':
-    prepare_teachable_machine_dataset(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_PERCENTAGE,
-                                      utils.RANDOM_STATE)
+    # prepare_dataset_imbalanced(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_PERCENTAGE,
+    #                            utils.RANDOM_STATE)
+    pass
