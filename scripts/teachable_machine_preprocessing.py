@@ -5,7 +5,7 @@ Created on Mon Mar 22 16:28:51 2021
 
 This script performs the selection of images used for training the Teachable
 Machine model. We have 134862 images in the training set; Teachable Machine
-doesn't support loading much more than 50000 images, so 50% of the data will be
+doesn't support loading much more than 50000 images, so 40% of the data will be
 picked for upload
 '''
 import logging
@@ -25,13 +25,11 @@ def preparation_helper(training_set_subdirectory, file_names):
     the training_data subdirectory to the corresponding teachable_machine_data
     subdirectory '''
     for file_name in file_names:
-
         original_image_path = os.path.join(utils.TRAIN_SET_LOCATION, training_set_subdirectory, file_name)
         new_image_path = os.path.join(utils.TEACHABLE_MACHINE_DIR, training_set_subdirectory, file_name)
-
         shutil.copyfile(original_image_path, new_image_path)
 
-def prepare_teachable_machine_dataset(data_percentage=0.5, random_state=None):
+def prepare_teachable_machine_dataset(data_percentage=0.4, random_state=None):
     ''' Randomly picks <data_percentage> % of the data in the training set and
     and copies them to a separate directory, to be used directly for upload to
     Teachable Machine
