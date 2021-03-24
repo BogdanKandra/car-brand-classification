@@ -74,8 +74,50 @@ def prepare_dataset_imbalanced(data_percentage=0.4, random_state=None):
         copy_images(brand, relevant_image_names)
 
 def prepare_dataset_balanced(target_count=50000, random_state=None):
-    ''' '''
-    pass
+    ''' Randomly picks a target number of images from the training set and 
+    copies them to a separate directory, to be used directly for upload to
+    Teachable Machine. The resulting set will be balanced
+    
+    Arguments:
+        *target_count* (int) -- specifies the number of images to be uploaded
+        to Teachable Machine
+        
+        *random_state* (int) -- specifies the seed to be used with the
+        RandomState instance, so that the results are reproducible
+    
+    Returns:
+        NumPy array -- the subsampled data
+    '''
+    # Initialize necessary variables
+    np.random.seed(random_state)
+    samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
+    subsampling_count = target_count // len(samples_counts)
+
+    # Create teachable machine dataset directory, if necessary
+    if os.path.isdir(utils.TEACHABLE_MACHINE_DIR) is False:
+        os.mkdir(utils.TEACHABLE_MACHINE_DIR)
+
+    LOGGER.info('> Randomly choosing files for training Teachable Machine model...')
+    for brand in samples_counts.keys():
+        LOGGER.info('>>> Processing brand {}...'.format(brand))
+
+        # Create subdirectory
+        os.mkdir(os.path.join(utils.TEACHABLE_MACHINE_DIR, brand))
+
+        # Compute number of images to copy
+        brand_directory_path = os.path.join(utils.TRAIN_SET_LOCATION, brand)
+        image_names = os.listdir(brand_directory_path)
+        count = len(image_names)
+        if count < subsampling_count:
+            subsampling_count = count
+
+        # Select subsample image names
+        available_indices = np.random.permutation(count)
+        subsampling_indices = available_indices[:subsampling_count]
+        relevant_image_names = [image_names[i] for i in subsampling_indices]
+
+        # Copy the images from the source directory to a separate directory
+        copy_images(brand, relevant_image_names)
 
 
 
@@ -83,4 +125,4 @@ def prepare_dataset_balanced(target_count=50000, random_state=None):
 if __name__ == '__main__':
     # prepare_dataset_imbalanced(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_PERCENTAGE,
     #                            utils.RANDOM_STATE)
-    pass
+    prepare_dataset_balanced(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_COUNT, utils.RANDOM_STATE)
