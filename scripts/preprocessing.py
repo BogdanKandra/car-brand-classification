@@ -113,9 +113,11 @@ def data_analysis(save_plots=False):
     utils.write_dictionary(top10_classes_counts, utils.TOP10_BRANDS_COUNTS_NAME)
     utils.write_dictionary(samples_information, utils.TOP10_BRANDS_INFORMATION_NAME)
 
-def train_valid_test_split(train_size=0.7, validation_size = 0.1, random_state=None):
+def train_valid_test_split_imbalanced(train_size=0.7, validation_size = 0.1, random_state=None):
     ''' Splits the data specified in the top_brands_samples_information
-    dictionary into random training and testing subsets
+    dictionary into random training and testing subsets. The resulting datasets
+    contain the requested proportions of samples in a stratified manner, but
+    the resulting classes are imbalanced.
 
     Arguments:
         *train_size* (float) -- specifies the percentage of the data to be
@@ -170,6 +172,70 @@ def train_valid_test_split(train_size=0.7, validation_size = 0.1, random_state=N
         key_train_labels = training_count * [brand]
         key_validation_labels = validation_count * [brand]
         key_test_labels = (count - training_count - validation_count) * [brand]
+
+        train_labels.extend(key_train_labels)
+        validation_labels.extend(key_validation_labels)
+        test_labels.extend(key_test_labels)
+
+    return train_image_names, validation_image_names, test_image_names,\
+           train_labels, validation_labels, test_labels
+
+def train_valid_test_split_balanced(train_size=0.7, validation_size=0.1, random_state=None):
+    ''' Splits the data specified in the top_brands_samples_information
+    dictionary into random training and testing subsets. The resulting datasets
+    contain the requested proportions of samples, taken randomly such that the
+    resulting classes are balanced
+
+    Arguments:
+        *train_size* (float) -- specifies the percentage of the data to be
+        selected for the training set; value must be between 0 and 1
+
+        *validation_size* (float) -- specifies the percentage of the data to be
+        selected for the validation set; value must be between 0 and 1
+
+        *random_state* (int) -- specifies the seed to be used with the
+        RandomState instance, so that the results are reproducible
+
+    Returns:
+        tuple of six lists -- the training, validation and testing data and labels
+    '''
+    # Initialize necessary variables
+    np.random.seed(random_state)
+    train_image_names, validation_image_names, test_image_names = [], [], []
+    train_labels, validation_labels, test_labels = [], [], []
+
+    # Compute the maximum number of samples that can be used so classes are balanced
+    samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
+    maximum_count = min(list(samples_counts.values()))
+    training_count = int(train_size * maximum_count)
+    validation_count = int(validation_size * maximum_count)
+
+    # Take the determined count of data from each class
+    for brand in samples_counts.keys():
+        brand_count = samples_counts[brand]
+
+        # Generate indices permutation for selecting train, validation and test data
+        available_indices = np.random.permutation(brand_count)
+        relevant_indices = available_indices[: maximum_count]
+        train_indices = relevant_indices[:training_count]
+        validation_indices = relevant_indices[training_count : training_count + validation_count]
+        test_indices = relevant_indices[training_count + validation_count :]
+
+        # Generate and append the relevant image names
+        image_base_name = brand + '_'
+
+        key_train_image_names = [image_base_name + str(index) for index in train_indices]
+        key_validation_image_names = [image_base_name + str(index) for index in validation_indices]
+        key_test_image_names = [image_base_name + str(index) for index in test_indices]
+
+        train_image_names.extend(key_train_image_names)
+        validation_image_names.extend(key_validation_image_names)
+        test_image_names.extend(key_test_image_names)
+
+        # Generate and append the labels
+        key_train_labels = training_count * [brand]
+        key_validation_labels = validation_count * [brand]
+        key_test_labels = (maximum_count - training_count - validation_count) * [brand]
 
         train_labels.extend(key_train_labels)
         validation_labels.extend(key_validation_labels)
@@ -330,31 +396,39 @@ if __name__ == '__main__':
 
         # Create the reorganized dataset structure ("dataset" directory)
         LOGGER.info('>>> Reorganizing the dataset and creating "dataset" directory...')
-        start_acquisition = time.time()
+        start = time.time()
         data_acquisition()
-        end_acquisition = time.time()
-        LOGGER.info('>>> Reorganizing the dataset took {}\n'.format(end_acquisition - start_acquisition))
+        end = time.time()
+        LOGGER.info('>>> Reorganizing the dataset took {}\n'.format(end - start))
 
         # Analyze the dataset and save the results in the "figures" and "texts" directories
         LOGGER.info('>>> Analyzing the dataset...')
-        start_analysis = time.time()
+        start = time.time()
         data_analysis(save_plots=True)
-        end_analysis = time.time()
-        LOGGER.info('>>> Analyzing the dataset took {}\n'.format(end_analysis - start_analysis))
+        end = time.time()
+        LOGGER.info('>>> Analyzing the dataset took {}\n'.format(end - start))
 
-        # Split the names of the data files into training and testing sets
-        LOGGER.info('>>> Splitting the data into training and testing sets...')
-        start_split = time.time()
-        names_and_labels = train_valid_test_split(utils.TRAIN_SET_PERCENTAGE, utils.VALIDATION_SET_PERCENTAGE, utils.RANDOM_STATE)
-        end_split = time.time()
-        LOGGER.info('>>> Splitting took {}\n'.format(end_split - start_split))
+        if utils.BALANCED_DATASET_CREATION is True:
+            # Split the names of the data files into training and testing sets
+            LOGGER.info('>>> Splitting the data into training and testing sets...')
+            start = time.time()
+            names_and_labels = train_valid_test_split_balanced(utils.TRAIN_SET_PERCENTAGE, utils.VALIDATION_SET_PERCENTAGE, utils.RANDOM_STATE)
+            end = time.time()
+            LOGGER.info('>>> Splitting took {}\n'.format(end - start))
+        else:
+            # Split the names of the data files into training and testing sets
+            LOGGER.info('>>> Splitting the data into training and testing sets...')
+            start = time.time()
+            names_and_labels = train_valid_test_split_imbalanced(utils.TRAIN_SET_PERCENTAGE, utils.VALIDATION_SET_PERCENTAGE, utils.RANDOM_STATE)
+            end = time.time()
+            LOGGER.info('>>> Splitting took {}\n'.format(end - start))
 
         # Create the training data directory structure for loading in Keras and resize images
         LOGGER.info('>>> Preparing the training dataset...')
-        start_preparation = time.time()
+        start = time.time()
         prepare_training_dataset(*names_and_labels[:3])
-        end_preparation = time.time()
-        LOGGER.info('>>> Preparing the training dataset took {}\n'.format(end_preparation - start_preparation))
+        end = time.time()
+        LOGGER.info('>>> Preparing the training dataset took {}\n'.format(end - start))
     else:
         LOGGER.info('>>> "dataset" directory already present... skipping data preprocessing')
 
@@ -364,17 +438,17 @@ if __name__ == '__main__':
 
         # Subsample the training dataset for computing statistics necessary for preprocessing
         LOGGER.info('>>> Subsampling the training dataset...')
-        start_subsampling = time.time()
+        start = time.time()
         X_sample = subsample_data(utils.SUBSAMPLE_PERCENTAGE, utils.RANDOM_STATE)
-        end_subsampling = time.time()
-        LOGGER.info('>>> Subsampling took {}\n'.format(end_subsampling - start_subsampling))
+        end = time.time()
+        LOGGER.info('>>> Subsampling took {}\n'.format(end - start))
 
         # Pickle the subsampled data for later uploading on Google Drive
         LOGGER.info('>>> Serializing the subsampled data...')
-        start_serializing = time.time()
+        start = time.time()
         utils.save_numpy_array(X_sample, utils.SUBSAMPLE_ARRAY_NAME)
-        end_serializing = time.time()
-        LOGGER.info('>>> Serializing took {}\n'.format(end_serializing - start_serializing))
+        end = time.time()
+        LOGGER.info('>>> Serializing took {}\n'.format(end - start))
     else:
         LOGGER.info('>>> "pickles" directory already present... loading saved data subsample')
         X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
