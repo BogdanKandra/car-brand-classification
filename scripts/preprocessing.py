@@ -213,6 +213,7 @@ def train_valid_test_split_balanced(train_size=0.7, validation_size=0.1, random_
     # Take the determined count of data from each class
     for brand in samples_counts.keys():
         brand_count = samples_counts[brand]
+        brand_image_names = os.listdir(os.path.join(utils.DATASET_LOCATION, brand))
 
         # Generate indices permutation for selecting train, validation and test data
         available_indices = np.random.permutation(brand_count)
@@ -222,11 +223,9 @@ def train_valid_test_split_balanced(train_size=0.7, validation_size=0.1, random_
         test_indices = relevant_indices[training_count + validation_count :]
 
         # Generate and append the relevant image names
-        image_base_name = brand + '_'
-
-        key_train_image_names = [image_base_name + str(index) for index in train_indices]
-        key_validation_image_names = [image_base_name + str(index) for index in validation_indices]
-        key_test_image_names = [image_base_name + str(index) for index in test_indices]
+        key_train_image_names = [brand_image_names[index] for index in train_indices]
+        key_validation_image_names = [brand_image_names[index] for index in validation_indices]
+        key_test_image_names = [brand_image_names[index] for index in test_indices]
 
         train_image_names.extend(key_train_image_names)
         validation_image_names.extend(key_validation_image_names)
@@ -252,13 +251,14 @@ def preparation_helper(training_set_subdirectory, class_name, file_names):
         original_image_path = os.path.join(utils.DATASET_LOCATION, class_name, file_name)
         new_image_path = os.path.join(training_set_subdirectory, class_name, file_name)
 
-        if os.path.exists(original_image_path + '.jpg'):
-            extension = '.jpg'
-        else:
-            extension = '.png'
+        if '.jpg' not in new_image_path and '.png' not in new_image_path:
+            if os.path.exists(original_image_path + '.jpg'):
+                extension = '.jpg'
+            else:
+                extension = '.png'
 
-        original_image_path += extension
-        new_image_path += extension
+            original_image_path += extension
+            new_image_path += extension
 
         # Load the image from the original path, resize it and save the resulting image
         Image.open(original_image_path) \
