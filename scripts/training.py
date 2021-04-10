@@ -48,15 +48,15 @@ def build_model():
 if __name__ == '__main__':
 
     # Load the necessary data into memory
-    X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
+    # X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
 
-    # Create necessary directories
-    if os.path.isdir(utils.AUGMENTED_DIR) is False:
-        os.mkdir(utils.AUGMENTED_DIR)
-        os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
-        os.mkdir(utils.VALIDATION_AUGMENT_LOCATION)
-        os.mkdir(utils.TEST_AUGMENT_LOCATION)
+    # # Create necessary directories
+    # if os.path.isdir(utils.AUGMENTED_DIR) is False:
+    #     os.mkdir(utils.AUGMENTED_DIR)
+    #     os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
+    #     os.mkdir(utils.VALIDATION_AUGMENT_LOCATION)
+    #     os.mkdir(utils.TEST_AUGMENT_LOCATION)
 
     # Create Keras data generators and iterators
     LOGGER.info('>>> Defining and Fitting the data generator...')
@@ -64,11 +64,11 @@ if __name__ == '__main__':
     
     # The augmentation is the same for all data sets, so a single generator is used
     data_generator = ImageDataGenerator(
-        featurewise_center=True,
-        featurewise_std_normalization=True
+        # featurewise_center=True,
+        # featurewise_std_normalization=True
     )
-    data_generator.fit(X_sample)
-    del X_sample
+    # data_generator.fit(X_sample)
+    # del X_sample
 
     end = time.time()
     LOGGER.info('>>> Fitting the data generator took {}\n'.format(end - start))
@@ -83,9 +83,9 @@ if __name__ == '__main__':
         classes=list(samples_counts.keys()),
         class_mode='categorical',
         batch_size=utils.BATCH_SIZE,
-        shuffle=False,
+        shuffle=True,
         # seed=utils.RANDOM_STATE,
-        save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
+        # save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
 
@@ -98,7 +98,7 @@ if __name__ == '__main__':
         batch_size=utils.BATCH_SIZE,
         shuffle=False,
         # seed=utils.RANDOM_STATE,
-        save_to_dir=utils.VALIDATION_AUGMENT_LOCATION,
+        # save_to_dir=utils.VALIDATION_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
 
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         batch_size=utils.BATCH_SIZE,
         shuffle=False,
         # seed=utils.RANDOM_STATE,
-        save_to_dir=utils.TEST_AUGMENT_LOCATION,
+        # save_to_dir=utils.TEST_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
 
@@ -121,8 +121,8 @@ if __name__ == '__main__':
     # X_batch, y_batch = train_iterator.next()
 
     # Define test layers
-    preprocess_input = apps.vgg16.preprocess_input
-    base_model = load_pretrained_network('VGG16')
+    preprocess_input = apps.mobilenet_v2.preprocess_input
+    base_model = load_pretrained_network('MobileNetV2')
     flatten_layer = layers.Flatten(name='flatten')
     specialisation_layer = layers.Dense(1024, activation='relu', name='specialisation_layer')
     avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     # Define train parameters
     steps_per_epoch = len(train_iterator)
     validation_steps = len(validation_iterator)
-    base_learning_rate = 0.001 # TODO - scheduler for learning rate
+    base_learning_rate = 0.00001 # TODO - scheduler for learning rate
     optimizer = optimizers.Adam(learning_rate=base_learning_rate)
     loss_function = losses.CategoricalCrossentropy()
     train_metrics = [metrics.Accuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
