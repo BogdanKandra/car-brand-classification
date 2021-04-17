@@ -64,37 +64,6 @@ def build_model_flatten_dense(module_name, network_name):
 
     return model
 
-def plot_results(training_history):
-    # Plot training and validation accuracy and loss
-    training_accuracy = training_history['accuracy']
-    validation_accuracy = training_history['val_accuracy']
-    training_loss = training_history['loss']
-    validation_loss = training_history['val_loss']
-
-    plt.figure(figsize=(18, 10))
-    plt.subplot(2, 1, 1)
-    plt.plot(training_accuracy, label='Training Accuracy')
-    plt.plot(validation_accuracy, label='Validation Accuracy')
-    plt.legend()
-    plt.ylabel('Accuracy')
-    plt.ylim([min(plt.ylim()), 1])
-    plt.title('Training and Validation Accuracy')
-
-    plt.subplot(2, 1, 2)
-    plt.plot(training_loss, label='Training Loss')
-    plt.plot(validation_loss, label='Validation Loss')
-    plt.legend()
-    plt.xlabel('Epoch')
-    plt.ylabel('Categorical Cross Entropy')
-    plt.ylim([0, max(plt.ylim())])
-    plt.title('Training and Validation Loss')
-
-    if os.path.isdir(utils.TRAINING_RESULTS_FIGURES_LOCATION) is False:
-        os.mkdir(utils.TRAINING_RESULTS_FIGURES_LOCATION)
-
-    figure_path = os.path.join(utils.TRAINING_RESULTS_FIGURES_LOCATION, 'Training Results.png')
-    plt.savefig(figure_path, quality=100)
-    plt.close()
 
 
 ##### Algorithm
@@ -211,9 +180,10 @@ if __name__ == '__main__':
     LOGGER.info('>>> Evaluating the model...')
     start = time.time()
     final_results = model.evaluate(test_iterator, steps=evaluation_steps,
-                                  return_dict=True)
+                                   return_dict=True)
     LOGGER.info('>>>>> Final Results: {}'.format(final_results))
     end = time.time()
     LOGGER.info('>>> Evaluating the model took {}\n'.format(end - start))
 
-    plot_results(history)
+    # Plot the results
+    utils.plot_results(history, network_name)
