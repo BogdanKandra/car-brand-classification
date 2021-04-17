@@ -21,29 +21,12 @@ logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
 ### Functions
-def load_pretrained_network(network_name):
-    ''' Loads the specified pretrained network from Keras applications, with
-    frozen weights '''
-    image_shape = (utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3)
-    base_model = getattr(apps, network_name)(include_top=False, weights='imagenet', input_shape=image_shape)
-    base_model.trainable = False
-
-    return base_model
-
-def load_input_preprocessing_function(module_name):
-    ''' Loads the input preprocessing function for the specified pretrained
-    network from Keras applications '''
-    network_module = getattr(apps, module_name)
-    preprocess_input_function = getattr(network_module, 'preprocess_input')
-
-    return preprocess_input_function
-
 def build_model_pooling_dropout(module_name, network_name):
     ''' Builds the model, starting from a base model specified by the module
     name and network name '''
     # Define layers
-    preprocess_input = load_input_preprocessing_function(module_name)
-    base_model = load_pretrained_network(network_name)
+    preprocess_input = utils.load_input_preprocessing_function(module_name)
+    base_model = utils.load_pretrained_network(network_name)
     avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
     # max_pooling_layer = layers.GlobalMaxPooling2D(name='max_pooling_layer')
     dropout_layer = layers.Dropout(0.5, name='dropout_layer')
@@ -64,8 +47,8 @@ def build_model_flatten_dense(module_name, network_name):
     ''' Builds the model, starting from a base model specified by the module
     name and network name '''
     # Define test layers
-    preprocess_input = load_input_preprocessing_function(module_name)
-    base_model = load_pretrained_network(network_name)
+    preprocess_input = utils.load_input_preprocessing_function(module_name)
+    base_model = utils.load_pretrained_network(network_name)
     flatten_layer = layers.Flatten(name='flatten')
     specialisation_layer = layers.Dense(1024, activation='relu', name='specialisation_layer')
     classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
