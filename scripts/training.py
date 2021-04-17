@@ -38,10 +38,80 @@ def load_input_preprocessing_function(module_name):
 
     return preprocess_input_function
 
-def build_model():
-    ''' Builds the model, starting from the base model '''
-    pass
+def build_model_pooling_dropout(module_name, network_name):
+    ''' Builds the model, starting from a base model specified by the module
+    name and network name '''
+    # Define layers
+    preprocess_input = load_input_preprocessing_function(module_name)
+    base_model = load_pretrained_network(network_name)
+    avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
+    # max_pooling_layer = layers.GlobalMaxPooling2D(name='max_pooling_layer')
+    dropout_layer = layers.Dropout(0.5, name='dropout_layer')
+    classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
 
+    # Define model structure
+    inputs = tf.keras.Input(shape=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3))
+    x = preprocess_input(inputs)
+    x = base_model(x, training=False)
+    x = avg_pooling_layer(x)
+    x = dropout_layer(x)
+    outputs = classification_layer(x)
+    model = tf.keras.Model(inputs, outputs)
+
+    return model
+
+def build_model_flatten_dense(module_name, network_name):
+    ''' Builds the model, starting from a base model specified by the module
+    name and network name '''
+    # Define test layers
+    preprocess_input = load_input_preprocessing_function(module_name)
+    base_model = load_pretrained_network(network_name)
+    flatten_layer = layers.Flatten(name='flatten')
+    specialisation_layer = layers.Dense(1024, activation='relu', name='specialisation_layer')
+    classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
+
+    # Define test model
+    inputs = tf.keras.Input(shape=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3))
+    x = preprocess_input(inputs)
+    x = base_model(x, training=False)
+    x = flatten_layer(x)
+    x = specialisation_layer(x)
+    outputs = classification_layer(x)
+    model = tf.keras.Model(inputs, outputs)
+
+    return model
+
+def plot_results(training_history):
+    # Plot training and validation accuracy and loss
+    training_accuracy = training_history['accuracy']
+    validation_accuracy = training_history['val_accuracy']
+    training_loss = training_history['loss']
+    validation_loss = training_history['val_loss']
+
+    plt.figure(figsize=(18, 10))
+    plt.subplot(2, 1, 1)
+    plt.plot(training_accuracy, label='Training Accuracy')
+    plt.plot(validation_accuracy, label='Validation Accuracy')
+    plt.legend()
+    plt.ylabel('Accuracy')
+    plt.ylim([min(plt.ylim()), 1])
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(2, 1, 2)
+    plt.plot(training_loss, label='Training Loss')
+    plt.plot(validation_loss, label='Validation Loss')
+    plt.legend()
+    plt.xlabel('Epoch')
+    plt.ylabel('Categorical Cross Entropy')
+    plt.ylim([0, max(plt.ylim())])
+    plt.title('Training and Validation Loss')
+
+    if os.path.isdir(utils.TRAINING_RESULTS_FIGURES_LOCATION) is False:
+        os.mkdir(utils.TRAINING_RESULTS_FIGURES_LOCATION)
+
+    figure_path = os.path.join(utils.TRAINING_RESULTS_FIGURES_LOCATION, 'Training Results.png')
+    plt.savefig(figure_path, quality=100)
+    plt.close()
 
 
 ##### Algorithm
@@ -120,43 +190,28 @@ if __name__ == '__main__':
 
     # X_batch, y_batch = train_iterator.next()
 
-    # Define test layers
-    preprocess_input = apps.mobilenet_v2.preprocess_input
-    base_model = load_pretrained_network('MobileNetV2')
-    flatten_layer = layers.Flatten(name='flatten')
-    specialisation_layer = layers.Dense(1024, activation='relu', name='specialisation_layer')
-    avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
-    max_pooling_layer = layers.GlobalMaxPooling2D(name='max_pooling_layer')
-    dropout_layer = layers.Dropout(0.5, name='dropout_layer')
-    classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
-
-    # Define test model
-    inputs = tf.keras.Input(shape=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3))
-    x = preprocess_input(inputs)
-    x = base_model(x, training=False)
-    x = avg_pooling_layer(x)
-    # x = flatten_layer(x)
-    # x = specialisation_layer(x)
-    x = dropout_layer(x)
-    outputs = classification_layer(x)
-    model = tf.keras.Model(inputs, outputs)
-
+    # Build the model
+    module_name = 'mobilenet_v2'
+    network_name = 'MobileNetV2'
+    model = build_model_flatten_dense(module_name, network_name)
+    # model = build_model_pooling_dropout(module_name, network_name)
     model.summary()
 
     # Define train parameters
-    steps_per_epoch = len(train_iterator)
+    train_steps = len(train_iterator)
     validation_steps = len(validation_iterator)
+    evaluation_steps = len(test_iterator)
     base_learning_rate = 0.00001 # TODO - scheduler for learning rate
     optimizer = optimizers.Adam(learning_rate=base_learning_rate)
     loss_function = losses.CategoricalCrossentropy()
-    train_metrics = [metrics.Accuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
+    train_metrics = [metrics.CategoricalAccuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
 
     model.compile(optimizer=optimizer,
                   loss=loss_function,
                   metrics=train_metrics)
 
     LOGGER.info('>>> Training the model...')
-    # initial_results = model.evaluate(test_iterator,
+    # initial_results = model.evaluate(test_iterator, steps=evaluation_steps,
     #                                  return_dict=True)
     # LOGGER.info('>>>>> Initial Results: {}'.format(initial_results))
 
@@ -164,7 +219,7 @@ if __name__ == '__main__':
     training_history = model.fit(train_iterator, epochs=20, verbose=1,
                                  validation_data=validation_iterator,
                                  callbacks=[],
-                                 steps_per_epoch=steps_per_epoch,
+                                 steps_per_epoch=train_steps,
                                  validation_steps=validation_steps)
     history = training_history.history
     end = time.time()
@@ -172,39 +227,10 @@ if __name__ == '__main__':
 
     LOGGER.info('>>> Evaluating the model...')
     start = time.time()
-    final_results = model.evaluate(test_iterator,
+    final_results = model.evaluate(test_iterator, steps=evaluation_steps,
                                   return_dict=True)
     LOGGER.info('>>>>> Final Results: {}'.format(final_results))
     end = time.time()
     LOGGER.info('>>> Evaluating the model took {}\n'.format(end - start))
 
-    # Plot training and validation accuracy and loss
-    training_accuracy = history['accuracy']
-    validation_accuracy = history['val_accuracy']
-    training_loss = history['loss']
-    validation_loss = history['val_loss']
-
-    plt.figure(figsize=(18, 10))
-    plt.subplot(2, 1, 1)
-    plt.plot(training_accuracy, label='Training Accuracy')
-    plt.plot(validation_accuracy, label='Validation Accuracy')
-    plt.legend()
-    plt.ylabel('Accuracy')
-    plt.ylim([min(plt.ylim()), 1])
-    plt.title('Training and Validation Accuracy')
-
-    plt.subplot(2, 1, 2)
-    plt.plot(training_loss, label='Training Loss')
-    plt.plot(validation_loss, label='Validation Loss')
-    plt.legend()
-    plt.xlabel('Epoch')
-    plt.ylabel('Categorical Cross Entropy')
-    plt.ylim([0, max(plt.ylim())])
-    plt.title('Training and Validation Loss')
-
-    if os.path.isdir(utils.TRAINING_RESULTS_FIGURES_LOCATION) is False:
-        os.mkdir(utils.TRAINING_RESULTS_FIGURES_LOCATION)
-
-    figure_path = os.path.join(utils.TRAINING_RESULTS_FIGURES_LOCATION, 'Training Results.png')
-    plt.savefig(figure_path, quality=100)
-    plt.close()
+    plot_results(history)
