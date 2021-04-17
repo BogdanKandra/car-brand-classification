@@ -47,6 +47,15 @@ RESIZE_HEIGHT = 128
 RESIZE_WIDTH = 128
 BATCH_SIZE = 16
 
+MODULE_TO_NETWORKS = {
+    'efficientnet': ['EfficientNetB0', 'EfficientNetB3', 'EfficientNetB7'],
+    'mobilenet': ['MobileNet'],
+    'mobilenet_v2': ['MobileNetV2'],
+    'nasnet': ['NASNetMobile'],
+    'resnet50': ['ResNet50'],
+    'resnet_v2': ['ResNet50V2'],
+    'vgg16': ['VGG16']
+}
 
 ### Utility functions
 def save_bar_plot(title, xlabel, ylabel, xdata, ydata, color='r', plot_name='figure'):
