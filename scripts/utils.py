@@ -9,6 +9,7 @@ import json
 import os
 import matplotlib.pyplot as plt
 import numpy as np
+import tensorflow.keras.applications as apps
 
 
 ### Constants
@@ -106,3 +107,52 @@ def load_numpy_array(file_name):
         array = np.load(f, fix_imports=False)
 
     return array
+
+def load_pretrained_network(network_name):
+    ''' Loads the specified pretrained network from Keras applications, with
+    frozen weights '''
+    image_shape = (RESIZE_HEIGHT, RESIZE_WIDTH, 3)
+    base_model = getattr(apps, network_name)(include_top=False, weights='imagenet', input_shape=image_shape)
+    base_model.trainable = False
+
+    return base_model
+
+def load_input_preprocessing_function(module_name):
+    ''' Loads the input preprocessing function for the specified pretrained
+    network from Keras applications '''
+    network_module = getattr(apps, module_name)
+    preprocess_input_function = getattr(network_module, 'preprocess_input')
+
+    return preprocess_input_function
+
+def plot_results(training_history, network_name):
+    ''' Plots the training and validation accuracy and loss '''
+    training_accuracy = training_history['accuracy']
+    validation_accuracy = training_history['val_accuracy']
+    training_loss = training_history['loss']
+    validation_loss = training_history['val_loss']
+
+    plt.figure(figsize=(18, 10))
+    plt.subplot(2, 1, 1)
+    plt.plot(training_accuracy, label='Training Accuracy')
+    plt.plot(validation_accuracy, label='Validation Accuracy')
+    plt.legend()
+    plt.ylabel('Accuracy')
+    plt.ylim([min(plt.ylim()), 1])
+    plt.title('Training and Validation Accuracy')
+
+    plt.subplot(2, 1, 2)
+    plt.plot(training_loss, label='Training Loss')
+    plt.plot(validation_loss, label='Validation Loss')
+    plt.legend()
+    plt.xlabel('Epoch')
+    plt.ylabel('Categorical Cross Entropy')
+    plt.ylim([0, max(plt.ylim())])
+    plt.title('Training and Validation Loss')
+
+    if os.path.isdir(TRAINING_RESULTS_FIGURES_LOCATION) is False:
+        os.mkdir(TRAINING_RESULTS_FIGURES_LOCATION)
+
+    figure_path = os.path.join(TRAINING_RESULTS_FIGURES_LOCATION, network_name + ' Training Results.png')
+    plt.savefig(figure_path, quality=100)
+    plt.close()
