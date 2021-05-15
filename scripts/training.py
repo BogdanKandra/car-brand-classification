@@ -7,7 +7,9 @@ This script performs the training of the image classifier
 '''
 import logging
 import matplotlib.pyplot as plt
+import numpy as np
 import os
+import sklearn.metrics as sk_metrics
 import time
 import utils
 import tensorflow as tf
@@ -69,21 +71,12 @@ def build_model_flatten_dense(module_name, network_name):
 ##### Algorithm
 if __name__ == '__main__':
 
-    # Load the necessary data into memory
+    ##### Make preparations for training
     # X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
-
-    # # Create necessary directories
-    # if os.path.isdir(utils.AUGMENTED_DIR) is False:
-    #     os.mkdir(utils.AUGMENTED_DIR)
-    #     os.mkdir(utils.TRAIN_AUGMENT_LOCATION)
-    #     os.mkdir(utils.VALIDATION_AUGMENT_LOCATION)
-    #     os.mkdir(utils.TEST_AUGMENT_LOCATION)
+    classes_list = sorted(samples_counts.keys())
 
     # Create Keras data generators and iterators
-    LOGGER.info('>>> Defining and Fitting the data generator...')
-    start = time.time()
-    
     # The augmentation is the same for all data sets, so a single generator is used
     data_generator = ImageDataGenerator(
         # featurewise_center=True,
@@ -92,22 +85,15 @@ if __name__ == '__main__':
     # data_generator.fit(X_sample)
     # del X_sample
 
-    end = time.time()
-    LOGGER.info('>>> Fitting the data generator took {}\n'.format(end - start))
-
-    LOGGER.info('>>> Defining the data iterators...')
-    start = time.time()
-
     train_iterator = data_generator.flow_from_directory(
         directory=utils.TRAIN_SET_LOCATION,
         target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH),
         color_mode='rgb',
-        classes=list(samples_counts.keys()),
+        classes=classes_list,
         class_mode='categorical',
         batch_size=utils.BATCH_SIZE,
         shuffle=True,
         # seed=utils.RANDOM_STATE,
-        # save_to_dir=utils.TRAIN_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
 
@@ -115,12 +101,11 @@ if __name__ == '__main__':
         directory=utils.VALIDATION_SET_LOCATION,
         target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH),
         color_mode='rgb',
-        classes=list(samples_counts.keys()),
+        classes=classes_list,
         class_mode='categorical',
         batch_size=utils.BATCH_SIZE,
         shuffle=False,
         # seed=utils.RANDOM_STATE,
-        # save_to_dir=utils.VALIDATION_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
 
@@ -128,25 +113,19 @@ if __name__ == '__main__':
         directory=utils.TEST_SET_LOCATION,
         target_size=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH),
         color_mode='rgb',
-        classes=list(samples_counts.keys()),
+        classes=classes_list,
         class_mode='categorical',
         batch_size=utils.BATCH_SIZE,
         shuffle=False,
         # seed=utils.RANDOM_STATE,
-        # save_to_dir=utils.TEST_AUGMENT_LOCATION,
         interpolation='bilinear'
     )
 
-    end = time.time()
-    LOGGER.info('>>> Defining the iterators took {}\n'.format(end - start))
-
-    # X_batch, y_batch = train_iterator.next()
-
-    # Build the model
+    ##### Build the model
     module_name = 'mobilenet_v2'
     network_name = 'MobileNetV2'
-    model = build_model_flatten_dense(module_name, network_name)
-    # model = build_model_pooling_dropout(module_name, network_name)
+    # model = build_model_flatten_dense(module_name, network_name)
+    model = build_model_pooling_dropout(module_name, network_name)
     model.summary()
 
     # Define train parameters
@@ -158,32 +137,38 @@ if __name__ == '__main__':
     loss_function = losses.CategoricalCrossentropy()
     train_metrics = [metrics.CategoricalAccuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
 
+    ##### Compile, train and evaluate the model
     model.compile(optimizer=optimizer,
                   loss=loss_function,
                   metrics=train_metrics)
 
-    LOGGER.info('>>> Training the model...')
-    # initial_results = model.evaluate(test_iterator, steps=evaluation_steps,
-    #                                  return_dict=True)
-    # LOGGER.info('>>>>> Initial Results: {}'.format(initial_results))
-
-    start = time.time()
-    training_history = model.fit(train_iterator, epochs=20, verbose=1,
-                                 validation_data=validation_iterator,
-                                 callbacks=[],
-                                 steps_per_epoch=train_steps,
+    training_history = model.fit(train_iterator, epochs=utils.NUM_EPOCHS,
+                                 verbose=1, validation_data=validation_iterator,
+                                 callbacks=[], steps_per_epoch=train_steps,
                                  validation_steps=validation_steps)
-    history = training_history.history
-    end = time.time()
-    LOGGER.info('>>> Training the model took {}\n'.format(end - start))
+    training_history = training_history.history
 
-    LOGGER.info('>>> Evaluating the model...')
-    start = time.time()
-    final_results = model.evaluate(test_iterator, steps=evaluation_steps,
-                                   return_dict=True)
-    LOGGER.info('>>>>> Final Results: {}'.format(final_results))
-    end = time.time()
-    LOGGER.info('>>> Evaluating the model took {}\n'.format(end - start))
+    ##### Generate results
+    LOGGER.info('>>> Running the model on the test set and generating results...')
 
-    # Plot the results
-    utils.plot_results(history, network_name)
+    # Plot the training and validation accuracy and loss
+    utils.plot_results(training_history, network_name)
+
+    # Evaluate the model and save the results
+    test_results = model.evaluate(test_iterator, steps=evaluation_steps,
+                                  return_dict=True)
+
+    # Generate the classification report
+    predictions = model.predict(test_iterator, steps=evaluation_steps)
+    y_pred = np.argmax(predictions, axis=1)
+    y_test = test_iterator.classes
+    class_labels = list(test_iterator.class_indices.keys())
+
+    report = sk_metrics.classification_report(y_test, y_pred, target_names=class_labels)
+    report_name = 'Classification Report.txt'
+    with open(os.path.join(utils.TRAINING_RESULTS_DIR, report_name), 'w') as f:
+        f.write(report)
+
+    # Generate and plot the confusion matrix
+    cm = sk_metrics.confusion_matrix(y_test, y_pred, labels=list(range(10)))
+    utils.plot_confusion_matrix(cm, classes_list)
