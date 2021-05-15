@@ -46,6 +46,7 @@ TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_COUNT = 50000
 RANDOM_STATE = 64
 RESIZE_HEIGHT = 128
 RESIZE_WIDTH = 128
+NUM_EPOCHS = 20
 BATCH_SIZE = 16
 
 MODULE_TO_NETWORKS = {
@@ -127,8 +128,8 @@ def load_input_preprocessing_function(module_name):
 
 def plot_results(training_history, network_name):
     ''' Plots the training and validation accuracy and loss '''
-    training_accuracy = training_history['accuracy']
-    validation_accuracy = training_history['val_accuracy']
+    training_accuracy = training_history['categorical_accuracy']
+    validation_accuracy = training_history['val_categorical_accuracy']
     training_loss = training_history['loss']
     validation_loss = training_history['val_loss']
 
@@ -154,5 +155,5 @@ def plot_results(training_history, network_name):
         os.mkdir(TRAINING_RESULTS_FIGURES_LOCATION)
 
     figure_path = os.path.join(TRAINING_RESULTS_FIGURES_LOCATION, network_name + ' Training Results.png')
-    plt.savefig(figure_path, quality=100)
+    plt.savefig(figure_path, dpi=300)
     plt.close()
