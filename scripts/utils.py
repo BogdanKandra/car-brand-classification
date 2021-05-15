@@ -5,6 +5,7 @@ Created on Tue Sep 22 08:54:15 2020
 
 This script contains utility functions
 '''
+import itertools
 import json
 import os
 import matplotlib.pyplot as plt
@@ -19,7 +20,7 @@ while os.path.basename(PROJECT_PATH) != 'car-brand-classification':
 ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(PROJECT_PATH), 'Data', 'Cars')
 DATASET_LOCATION = os.path.join(PROJECT_PATH, 'dataset')
 FIGURES_LOCATION = os.path.join(PROJECT_PATH, 'figures')
-TRAINING_RESULTS_FIGURES_LOCATION = os.path.join(FIGURES_LOCATION, 'training_results')
+TRAINING_RESULTS_DIR = os.path.join(PROJECT_PATH, 'training_results')
 PICKLES_LOCATION = os.path.join(PROJECT_PATH, 'pickles')
 TEXTS_LOCATION = os.path.join(PROJECT_PATH, 'texts')
 TRAINING_DIR = os.path.join(PROJECT_PATH, 'training_data')
@@ -151,9 +152,32 @@ def plot_results(training_history, network_name):
     plt.ylim([0, max(plt.ylim())])
     plt.title('Training and Validation Loss')
 
-    if os.path.isdir(TRAINING_RESULTS_FIGURES_LOCATION) is False:
-        os.mkdir(TRAINING_RESULTS_FIGURES_LOCATION)
+    if os.path.isdir(TRAINING_RESULTS_DIR) is False:
+        os.mkdir(TRAINING_RESULTS_DIR)
 
-    figure_path = os.path.join(TRAINING_RESULTS_FIGURES_LOCATION, network_name + ' Training Results.png')
+    figure_path = os.path.join(TRAINING_RESULTS_DIR, network_name + ' Training Results.png')
     plt.savefig(figure_path, dpi=300)
+    plt.close()
+
+def plot_confusion_matrix(conf_matrix, labels_list, normalized=False, title='Confusion Matrix', cmap=plt.cm.Blues):
+    if normalized:
+        conf_matrix = conf_matrix.astype('float') / conf_matrix.sum(axis=1)[:, np.newaxis]
+
+    plt.imshow(conf_matrix, interpolation='nearest', cmap=cmap)
+    plt.title(title)
+    plt.colorbar()
+    tick_marks = np.arange(len(labels_list))
+    plt.xticks(tick_marks, labels_list, rotation=45)
+    plt.yticks(tick_marks, labels_list)
+
+    fmt = '.2f' if normalized else 'd'
+    thresh = conf_matrix.max() / 2.
+    for i, j in itertools.product(range(conf_matrix.shape[0]), range(conf_matrix.shape[1])):
+        plt.text(j, i, format(conf_matrix[i, j], fmt), horizontalalignment='center',
+                 color='white' if conf_matrix[i, j] > thresh else 'black')
+
+    plt.tight_layout()
+    plt.xlabel('Predicted label')
+    plt.ylabel('True label')
+    plt.savefig(os.path.join(TRAINING_RESULTS_DIR, title + '.png'), dpi=300)
     plt.close()
