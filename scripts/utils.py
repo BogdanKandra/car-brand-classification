@@ -51,13 +51,14 @@ NUM_EPOCHS = 20
 BATCH_SIZE = 16
 
 MODULE_TO_NETWORKS = {
-    'efficientnet': ['EfficientNetB0', 'EfficientNetB3', 'EfficientNetB7'],
+    'densenet': ['DenseNet121', 'DenseNet169', 'DenseNet201'],
+    'efficientnet': ['EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3', 'EfficientNetB4'],
+    'inception_v3': ['InceptionV3'],
     'mobilenet': ['MobileNet'],
     'mobilenet_v2': ['MobileNetV2'],
-    'nasnet': ['NASNetMobile'],
     'resnet50': ['ResNet50'],
     'resnet_v2': ['ResNet50V2'],
-    'vgg16': ['VGG16']
+    'xception': ['Xception']
 }
 
 ### Utility functions
