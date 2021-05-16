@@ -5,6 +5,7 @@ Created on Sat Jan  9 13:08:51 2021
 
 This script performs the training of the image classifier
 '''
+import json
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
@@ -72,6 +73,7 @@ def build_model_flatten_dense(module_name, network_name):
 if __name__ == '__main__':
 
     ##### Make preparations for training
+    LOGGER.info('>>> Making predictions for training...')
     # X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
     classes_list = sorted(samples_counts.keys())
@@ -121,13 +123,6 @@ if __name__ == '__main__':
         interpolation='bilinear'
     )
 
-    ##### Build the model
-    module_name = 'mobilenet_v2'
-    network_name = 'MobileNetV2'
-    # model = build_model_flatten_dense(module_name, network_name)
-    model = build_model_pooling_dropout(module_name, network_name)
-    model.summary()
-
     # Define train parameters
     train_steps = len(train_iterator)
     validation_steps = len(validation_iterator)
@@ -137,38 +132,50 @@ if __name__ == '__main__':
     loss_function = losses.CategoricalCrossentropy()
     train_metrics = [metrics.CategoricalAccuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
 
-    ##### Compile, train and evaluate the model
-    model.compile(optimizer=optimizer,
-                  loss=loss_function,
-                  metrics=train_metrics)
+    ##### Build the model
+    for module_name in utils.MODULE_TO_NETWORKS.keys():
+        for network_name in utils.MODULE_TO_NETWORKS[module_name]:
+            LOGGER.info('>>> Training the {} model...'.format(network_name))
+            model = build_model_flatten_dense(module_name, network_name)
+            # model = build_model_pooling_dropout(module_name, network_name)
+            model.summary()
 
-    training_history = model.fit(train_iterator, epochs=utils.NUM_EPOCHS,
-                                 verbose=1, validation_data=validation_iterator,
-                                 callbacks=[], steps_per_epoch=train_steps,
-                                 validation_steps=validation_steps)
-    training_history = training_history.history
+            ##### Compile, train and evaluate the model
+            model.compile(optimizer=optimizer,
+                          loss=loss_function,
+                          metrics=train_metrics)
 
-    ##### Generate results
-    LOGGER.info('>>> Running the model on the test set and generating results...')
+            training_history = model.fit(train_iterator, epochs=utils.NUM_EPOCHS,
+                                         verbose=1, validation_data=validation_iterator,
+                                         callbacks=[], steps_per_epoch=train_steps,
+                                         validation_steps=validation_steps)
+            training_history = training_history.history
 
-    # Plot the training and validation accuracy and loss
-    utils.plot_results(training_history, network_name)
+            ##### Generate results
+            LOGGER.info('>>> Running the model on the test set and generating results...')
 
-    # Evaluate the model and save the results
-    test_results = model.evaluate(test_iterator, steps=evaluation_steps,
-                                  return_dict=True)
+            # Plot the training and validation accuracy and loss
+            utils.plot_results(training_history, network_name)
 
-    # Generate the classification report
-    predictions = model.predict(test_iterator, steps=evaluation_steps)
-    y_pred = np.argmax(predictions, axis=1)
-    y_test = test_iterator.classes
-    class_labels = list(test_iterator.class_indices.keys())
+            # Evaluate the model and save the results
+            test_results = model.evaluate(test_iterator, steps=evaluation_steps,
+                                          return_dict=True)
+            results_name = '{} Test Results.txt'.format(network_name)
+            with open(os.path.join(utils.TRAINING_RESULTS_DIR, results_name), 'w') as f:
+                f.write(json.dumps(test_results, indent=4))
 
-    report = sk_metrics.classification_report(y_test, y_pred, target_names=class_labels)
-    report_name = 'Classification Report.txt'
-    with open(os.path.join(utils.TRAINING_RESULTS_DIR, report_name), 'w') as f:
-        f.write(report)
+            # Generate the classification report
+            predictions = model.predict(test_iterator, steps=evaluation_steps)
+            y_pred = np.argmax(predictions, axis=1)
+            y_test = test_iterator.classes
+            class_labels = list(test_iterator.class_indices.keys())
 
-    # Generate and plot the confusion matrix
-    cm = sk_metrics.confusion_matrix(y_test, y_pred, labels=list(range(10)))
-    utils.plot_confusion_matrix(cm, classes_list)
+            report = sk_metrics.classification_report(y_test, y_pred, target_names=class_labels)
+            report_name = '{} Classification Report.txt'.format(network_name)
+            with open(os.path.join(utils.TRAINING_RESULTS_DIR, report_name), 'w') as f:
+                f.write(report)
+
+            # Generate and plot the confusion matrix
+            cm = sk_metrics.confusion_matrix(y_test, y_pred, labels=list(range(10)))
+            cm_title = '{} Confusion Matrix'.format(network_name)
+            utils.plot_confusion_matrix(cm, classes_list, title=cm_title)
