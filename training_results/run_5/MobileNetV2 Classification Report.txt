@@ -1,0 +1,16 @@
+              precision    recall  f1-score   support
+
+         bmw       0.39      0.51      0.44      1293
+   chevrolet       0.30      0.32      0.31      1293
+       dodge       0.35      0.35      0.35      1293
+        ford       0.28      0.20      0.23      1293
+       honda       0.28      0.27      0.28      1293
+     hyundai       0.29      0.33      0.31      1293
+        jeep       0.58      0.79      0.67      1293
+      nissan       0.35      0.32      0.33      1293
+      toyota       0.20      0.11      0.14      1293
+  volkswagen       0.43      0.40      0.42      1293
+
+    accuracy                           0.36     12930
+   macro avg       0.34      0.36      0.35     12930
+weighted avg       0.34      0.36      0.35     12930

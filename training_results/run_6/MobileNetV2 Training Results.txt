@@ -1,0 +1,6 @@
+{
+    "loss": 1.9381,
+    "categorical_accuracy": 0.2921,
+    "val_loss": 1.9026,
+    "val_categorical_accuracy": 0.3215
+}
