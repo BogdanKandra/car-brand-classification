@@ -30,8 +30,10 @@ def build_model_pooling_dropout(module_name, network_name):
     # Define layers
     preprocess_input = utils.load_input_preprocessing_function(module_name)
     base_model = utils.load_pretrained_network(network_name)
-    avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
-    # max_pooling_layer = layers.GlobalMaxPooling2D(name='max_pooling_layer')
+    # avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
+    flatten_layer = layers.Flatten(name='flatten')
+    max_pooling_layer = layers.GlobalMaxPooling2D(name='max_pooling_layer')
+    specialisation_layer = layers.Dense(128, activation='relu', name='specialisation_layer')
     dropout_layer = layers.Dropout(0.5, name='dropout_layer')
     classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
 
@@ -39,7 +41,9 @@ def build_model_pooling_dropout(module_name, network_name):
     inputs = tf.keras.Input(shape=(utils.RESIZE_HEIGHT, utils.RESIZE_WIDTH, 3))
     x = preprocess_input(inputs)
     x = base_model(x, training=False)
-    x = avg_pooling_layer(x)
+    x = max_pooling_layer(x)
+    # x = flatten_layer(x)
+    x = specialisation_layer(x)
     x = dropout_layer(x)
     outputs = classification_layer(x)
     model = tf.keras.Model(inputs, outputs)
@@ -53,7 +57,8 @@ def build_model_flatten_dense(module_name, network_name):
     preprocess_input = utils.load_input_preprocessing_function(module_name)
     base_model = utils.load_pretrained_network(network_name)
     flatten_layer = layers.Flatten(name='flatten')
-    specialisation_layer = layers.Dense(1024, activation='relu', name='specialisation_layer')
+    specialisation_layer = layers.Dense(256, activation='relu', name='specialisation_layer')
+    dropout_layer = layers.Dropout(0.5, name='dropout_layer')
     classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
 
     # Define test model
@@ -62,6 +67,7 @@ def build_model_flatten_dense(module_name, network_name):
     x = base_model(x, training=False)
     x = flatten_layer(x)
     x = specialisation_layer(x)
+    x = dropout_layer(x)
     outputs = classification_layer(x)
     model = tf.keras.Model(inputs, outputs)
 
@@ -73,7 +79,7 @@ def build_model_flatten_dense(module_name, network_name):
 if __name__ == '__main__':
 
     ##### Make preparations for training
-    LOGGER.info('>>> Making predictions for training...')
+    LOGGER.info('>>> Making preparations for training...')
     # X_sample = utils.load_numpy_array(utils.SUBSAMPLE_ARRAY_NAME)
     samples_counts = utils.read_dictionary(utils.TOP10_BRANDS_COUNTS_NAME)
     classes_list = sorted(samples_counts.keys())
@@ -132,12 +138,16 @@ if __name__ == '__main__':
     loss_function = losses.CategoricalCrossentropy()
     train_metrics = [metrics.CategoricalAccuracy(), metrics.AUC(), metrics.Precision(), metrics.Recall()]
 
-    ##### Build the model
+    ##### Build and train the model
     for module_name in utils.MODULE_TO_NETWORKS.keys():
         for network_name in utils.MODULE_TO_NETWORKS[module_name]:
+            # Skip the current network training if already trained
+            if any([network_name in file_name for file_name in os.listdir(utils.TRAINING_RESULTS_DIR)]):
+                continue
+
             LOGGER.info('>>> Training the {} model...'.format(network_name))
-            model = build_model_flatten_dense(module_name, network_name)
-            # model = build_model_pooling_dropout(module_name, network_name)
+            # model = build_model_flatten_dense(module_name, network_name)
+            model = build_model_pooling_dropout(module_name, network_name)
             model.summary()
 
             ##### Compile, train and evaluate the model
@@ -151,15 +161,19 @@ if __name__ == '__main__':
                                          validation_steps=validation_steps)
             training_history = training_history.history
 
+            test_results = model.evaluate(test_iterator, steps=evaluation_steps,
+                                          return_dict=True)
+
             ##### Generate results
             LOGGER.info('>>> Running the model on the test set and generating results...')
 
-            # Plot the training and validation accuracy and loss
+            # Plot the training and validation accuracy and loss and save the train results
             utils.plot_results(training_history, network_name)
+            results_name = '{} Training Results.txt'.format(network_name)
+            with open(os.path.join(utils.TRAINING_RESULTS_DIR, results_name), 'w') as f:
+                f.write(json.dumps(training_history, indent=4))
 
-            # Evaluate the model and save the results
-            test_results = model.evaluate(test_iterator, steps=evaluation_steps,
-                                          return_dict=True)
+            # Save the test results
             results_name = '{} Test Results.txt'.format(network_name)
             with open(os.path.join(utils.TRAINING_RESULTS_DIR, results_name), 'w') as f:
                 f.write(json.dumps(test_results, indent=4))
