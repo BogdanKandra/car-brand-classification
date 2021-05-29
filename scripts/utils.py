@@ -51,8 +51,8 @@ NUM_EPOCHS = 20
 BATCH_SIZE = 16
 
 MODULE_TO_NETWORKS = {
-    'densenet': ['DenseNet121', 'DenseNet169', 'DenseNet201'],
-    'efficientnet': ['EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2', 'EfficientNetB3', 'EfficientNetB4'],
+    'densenet': ['DenseNet121'],
+    'efficientnet': ['EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2'],
     'inception_v3': ['InceptionV3'],
     'mobilenet': ['MobileNet'],
     'mobilenet_v2': ['MobileNetV2'],
