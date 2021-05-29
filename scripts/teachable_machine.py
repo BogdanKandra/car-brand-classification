@@ -125,4 +125,5 @@ def prepare_dataset_balanced(target_count=50000, random_state=None):
 if __name__ == '__main__':
     # prepare_dataset_imbalanced(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_PERCENTAGE,
     #                            utils.RANDOM_STATE)
-    prepare_dataset_balanced(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_COUNT, utils.RANDOM_STATE)
+    # prepare_dataset_balanced(utils.TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_COUNT, utils.RANDOM_STATE)
+    pass
