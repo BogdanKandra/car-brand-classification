@@ -20,6 +20,7 @@ while os.path.basename(PROJECT_PATH) != 'car-brand-classification':
 ORIGINAL_DATASET_LOCATION = os.path.join(os.path.dirname(PROJECT_PATH), 'Data', 'Cars')
 DATASET_LOCATION = os.path.join(PROJECT_PATH, 'dataset')
 FIGURES_LOCATION = os.path.join(PROJECT_PATH, 'figures')
+MODELS_LOCATION = os.path.join(PROJECT_PATH, 'models')
 TRAINING_RESULTS_DIR = os.path.join(PROJECT_PATH, 'training_results')
 PICKLES_LOCATION = os.path.join(PROJECT_PATH, 'pickles')
 TEXTS_LOCATION = os.path.join(PROJECT_PATH, 'texts')
@@ -47,18 +48,13 @@ TEACHABLE_MACHINE_TRAIN_SUBSAMPLE_COUNT = 50000
 RANDOM_STATE = 64
 RESIZE_HEIGHT = 128
 RESIZE_WIDTH = 128
-NUM_EPOCHS = 20
+NUM_EPOCHS = 50
 BATCH_SIZE = 16
 
 MODULE_TO_NETWORKS = {
-    'densenet': ['DenseNet121'],
     'efficientnet': ['EfficientNetB0', 'EfficientNetB1', 'EfficientNetB2'],
-    'inception_v3': ['InceptionV3'],
     'mobilenet': ['MobileNet'],
-    'mobilenet_v2': ['MobileNetV2'],
-    'resnet50': ['ResNet50'],
-    'resnet_v2': ['ResNet50V2'],
-    'xception': ['Xception']
+    'mobilenet_v2': ['MobileNetV2']
 }
 
 ### Utility functions
