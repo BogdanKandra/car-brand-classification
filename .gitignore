@@ -3,6 +3,7 @@ __pycache__/
 augmented_data/
 dataset/
 figures/
+models/
 pickles/
 teachable_machine_data/
 texts/
