@@ -30,10 +30,8 @@ def build_model_pooling_dropout(module_name, network_name):
     # Define layers
     preprocess_input = utils.load_input_preprocessing_function(module_name)
     base_model = utils.load_pretrained_network(network_name)
-    # avg_pooling_layer = layers.GlobalAveragePooling2D(name='avg_pooling_layer')
-    flatten_layer = layers.Flatten(name='flatten')
     max_pooling_layer = layers.GlobalMaxPooling2D(name='max_pooling_layer')
-    specialisation_layer = layers.Dense(128, activation='relu', name='specialisation_layer')
+    specialisation_layer = layers.Dense(256, activation='relu', name='specialisation_layer')
     dropout_layer = layers.Dropout(0.5, name='dropout_layer')
     classification_layer = layers.Dense(10, activation='softmax', name='classification_layer')
 
@@ -42,7 +40,6 @@ def build_model_pooling_dropout(module_name, network_name):
     x = preprocess_input(inputs)
     x = base_model(x, training=False)
     x = max_pooling_layer(x)
-    # x = flatten_layer(x)
     x = specialisation_layer(x)
     x = dropout_layer(x)
     outputs = classification_layer(x)
@@ -146,8 +143,8 @@ if __name__ == '__main__':
                 continue
 
             LOGGER.info('>>> Training the {} model...'.format(network_name))
-            # model = build_model_flatten_dense(module_name, network_name)
             model = build_model_pooling_dropout(module_name, network_name)
+            # model = build_model_flatten_dense(module_name, network_name)
             model.summary()
 
             ##### Compile, train and evaluate the model
@@ -193,3 +190,17 @@ if __name__ == '__main__':
             cm = sk_metrics.confusion_matrix(y_test, y_pred, labels=list(range(10)))
             cm_title = '{} Confusion Matrix'.format(network_name)
             utils.plot_confusion_matrix(cm, classes_list, title=cm_title)
+
+            # Save the model to disk in the TensorFlow SavedModel format
+            model_name = '{} Trained Model'.format(network_name)
+            model_path = os.path.join(utils.MODELS_LOCATION, model_name)
+            model.save(model_path)
+
+            # Convert the model to TensorFlow Lite and save it
+            converter = tf.lite.TFLiteConverter.from_saved_model(model_path)
+            tflite_model = converter.convert()
+            tflite_model_name = '{} Optimized Model.tflite'.format(network_name)
+            tflite_model_path = os.path.join(utils.MODELS_LOCATION, tflite_model_name)
+
+            with open(tflite_model_path, 'wb') as f:
+                f.write(tflite_model)
