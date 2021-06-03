@@ -67,7 +67,7 @@ def save_bar_plot(title, xlabel, ylabel, xdata, ydata, color='r', plot_name='fig
     plt.bar(xdata, ydata, color=color)
     if os.path.isdir(FIGURES_LOCATION) is False:
         os.mkdir(FIGURES_LOCATION)
-    plt.savefig(os.path.join(FIGURES_LOCATION, plot_name + '.png'), quality=100)
+    plt.savefig(os.path.join(FIGURES_LOCATION, plot_name + '.png'), dpi=300)
     plt.close()
 
 def show_bar_plot(figure_index, title, xlabel, ylabel, xdata, ydata, color='r'):
