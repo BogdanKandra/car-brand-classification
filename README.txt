@@ -24,7 +24,10 @@ RUNNING THE PROJECT:
 		-> Splitting the data into training and testing sets
 		-> Performing preprocessing on the training and testing sets
 		-> Computing and serializing a subsample, so that the Keras image data generator will be able to normalize the input images for training
-	-> Upload the "notebooks" and "training_data" directories to a Google Drive account
-	-> Upload the "pickles\subsample.npy" and "texts\top_10_brands_samples_counts.txt" files to a directory named "resources" to the same Google Drive account
-	-> Run "notebooks\training.ipynb" in Google Colab for:
-		-> Performing the training process and saving the results
+  -> If training on Google Colab is preferred:
+  	-> Upload the "notebooks" and "training_data" directories to a Google Drive account
+  	-> Upload the "pickles\subsample.npy" and "texts\top_10_brands_samples_counts.txt" files to a directory named "resources" to the same Google Drive account
+	  -> Run "notebooks\training.ipynb" in Google Colab for:
+		  -> Performing the training process and saving the results
+  -> If training locally is preferred:
+    -> Run "scripts\training.py"

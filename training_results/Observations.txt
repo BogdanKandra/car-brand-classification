@@ -1,0 +1,138 @@
+Pre-trained networks used for each experiment:
+=======================================
+	-> DenseNet121, EfficientNetB0, EfficientNetB1, EfficientNetB2, InceptionV3,
+	MobileNet, MobileNetV2, ResNet50, ResNet50V2, Xception
+	-> These networks were chosen because they are all maximum 100 MB in size and
+	have at most 25 million parameters. These models are regarded as being
+	relatively small, which is suitable for our application
+	-> These networks are used as the basis of our models; the learning is
+	performed by freezing the weights of the pre-trained network, then adding
+	additional layers on top of it, which are then trained on our dataset
+	-> The pre-trained networks used, in decreasing order of their accuracy on
+	the ImageNet dataset: EfficientNetB2 (79.9), Xception (79), EfficientNetB1 (78,8),
+	InceptionV3 (77,9), EfficientNetB0 (76,6), ResNet50V2 (76), ResNet50 (74,9),
+	DenseNet121 (75), MobileNetV2 (71.3), MobileNet (70.4)
+	-> More information about the models used can be found here: https://keras.io/api/applications/
+
+Architectures used for each training run:
+=======================================
+	run_1 -> Base Model -> Avg Pooling 2D -> Dropout 0.5 -> Dense 10
+	run_2 -> Base Model -> Flatten -> Dense 1024 -> Dropout 0.5 -> Dense 10
+	run_3 -> Base Model -> Flatten -> Dense 512 -> Dropout 0.5 -> Dense 10
+	run_4 -> Base Model -> Flatten -> Dense 256 -> Dropout 0.5 -> Dense 10
+	run_5 -> Base Model -> Max Pooling 2D -> Dense 256 -> Dropout 0.5 -> Dense 10
+	run_6 -> Base Model -> Max Pooling 2D -> Dense 128 -> Dropout 0.5 -> Dense 10
+	run_7 -> Base Model -> Max Pooling 2D -> Dense 256 -> Dropout 0.5 -> Dense 10 (50 epochs)
+
+Results analysis:
+=======================================
+	-> The analysis of the results is based on the files which can be found in the
+	'training_results' directory of the project.
+	
+	run_1:
+	-> The architecture used in run_1 is the simplest, because it doesn't use any Fully
+		Connected layers for specializing the network on our dataset. This model
+		directly performs Average Pooling on the features given by the base model
+		and then applies a Dropout layer, for reducing the chance of overfitting,
+		then simply applies a Fully Connected layer having the softmax activation
+		function, for classification. This last layer will be called the "classification
+		layer"
+	-> The training and validation accuracy hardly surpassed 30% and the loss
+		revolved around 2.0
+	-> The accuracies obtained on the test set are in the [28% - 36%] interval,
+		with MobileNet achieving the 36% maximum. The loss value coresponding to the
+		maximum accuracy is, as expected, the minimum among all trained models (1.8176)
+		This is an indicator of the fact that the model didn't overfit.
+	-> Another strong indicator that the models trained in the first experiment
+		did not overfit, is that the training and validation loss and accuracy are
+		fairly similar
+
+	run_2:
+	-> The architecture used in run_2 is much more complex. It feeds the features computed
+		by the base model to a Fully Connected layer containing 1024 neurons and then
+		applies a Dropout layer and the classification layer.
+	-> The training and validation accuracy and loss differ dramatically, as it
+		can be observed in the accuracy and loss plots; the models rapidly learn
+		the training set completely (leading to ~100% accuracy), but heavily
+		underperform on the validation set (yielding between 40 and 55% accuracy).
+		This is a clear indicator of overfitting.
+	-> The accuracies obtained on the test set are in the [37% - 57%] interval,
+		with MobileNet achieving the 57% maximum. The loss value of the MobileNet model
+		is 2.0068, which is very high compared to the loss on the training set (~0%),
+		reaffirming the fact that this model overfits.
+	
+	run_3:
+	-> One of the biggest reasons models overfit is that the model complexity
+		is too big for the data provided so, since the last architecture overfit, I
+		decided to reduce the number of neurons of the Fully Connected layer from
+		1024 to 512. This lead to visible improvements, with smaller loss values and
+		slightly greater accuracies.
+	-> The differences between the training and validation accuracy and loss
+		still display signs of overfitting, but are significantly reduced in comparison
+		to the second experiment.
+	-> The models no longer learn the training set completely and the accuracies
+		on the validation set range in the [36% - 57%] interval. The MobileNet model
+		has the maximum of 57% accuracy and a loss value of ~1.37, which compared to
+		the training loss of ~0.25 is still big and confirms the occurence of overfitting.
+	
+	run_4:
+	-> The appearance of overfitting in the third experiment motivated me to
+		further reduce the number of neurons from the Fully Connected layer, from
+		512 to 256. While the reduction in the number of neurons did reduce overfitting,
+		it did not contribute too much to boosting the actual results of the model.
+		This can be seen in the training and validation plots, as the validation
+		accuracy and loss values did not modify substantially from their values
+		from the last experiment, leaving only the training accuracy to drop and the
+		training loss to remain higher, thus leading to reduced overfitting.
+	-> The accuracies obtained on the test set vary in the [35% - 55%] interval,
+		with EfficientNetB0 and MobileNet achieving the 55% maximum and holding the
+		minimum loss values of 1.3310 and 1.3496 respectively. The difference between
+		the test loss and the training loss (~0.5) still confirms the presence of
+		overfitting.
+	
+	run_5:
+	-> The results of the previous 4 experiments revealed that the introduction
+		of a Fully Connected layer between the base model and the classification layer
+		leads to overfitting, regardless of the number of neurons selected. This,
+		combined with the fact that the first experiment did not overfit, led to the
+		construction of the fifth architecture:
+	-> First, the number of features returned by the base model is reduced, by
+		using a Max Pooling layer (to reduce overfitting); then the remaining features
+		are fed to the previously used architecture. Max Pooling was preferred over
+		Avg Pooling, because it captures relevant objects and edges more accurately
+		in comparison to the Avg Pooling layer, which effectively smoothes out edges.
+	-> This time, the training and validation accuracy and loss values overlap
+		in most cases, the differences being negligible. Overfitting no longer occurs
+		and the results are slightly better than in the first experiment, thanks to
+		the Pooling layer.
+	-> The training and validation accuracy surpassed 30% in most cases and the loss
+		was under 2.0
+	-> The accuracies on the test set vary in the [30% - 39%] interval, with
+		EfficientNetB0, EfficientNetB1 and EfficientNetB2 achieving the 39%
+		maximum. The coresponding loss values were 1.71, 1.7369 and 1.7411
+		respectively (and the lowest among all pre-trained networks)
+	
+	run_6:
+	-> The architecture was kept the same as in the previous experiment, except
+		for the number of neurons in the Fully Connected layer, which was
+		reduced from 256 to 128.
+	-> This lead to underfitting, which can be observed from the fact that the
+		accuracies obtained by the pre-trained networks reduced into the [26% - 36%]
+		interval and the loss values increased.
+	-> The best result is again achieved by the EfficientNetB0 network, which got
+		32% accuracy and 1.87 loss on the training set, 35% accuracy and 1.82 loss
+		on the validation set and 36% accuracy and 1.81 loss on the test set.
+
+	run_7:
+	-> Considering the results obtained in the previous experiments, we conclude
+		that the best architecture is the one tested in the fifth experiment. We
+		re-train this architecture, this time for 50 epochs, as opposed to 20 and
+		only for the EfficientNetB0, EfficientNetB1, EfficientNetB2, MobileNet
+		and MobileNetV2 networks.
+	-> None of these networks overfit, and the accuracy on the test set was over
+		40% for all of the 5 networks. The best result was achieved by EfficientNetB0,
+		which got 49% accuracy on the training set, 45% on the validation set
+		and 46% on the test set. The value of the loss function was ~1.46 on the
+		training set, ~1.56 on the validation set and ~1.55 on the test set.
+	-> The final model to be used in the application will be the one using
+		EfficientNetB0 as a base model.
