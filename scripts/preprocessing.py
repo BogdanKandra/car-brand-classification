@@ -388,7 +388,7 @@ def subsample_data(data_percentage=0.1, random_state=None):
 
 
 
-##### Main algorithm
+##### Preprocessing pipeline
 if __name__ == '__main__':
 
     # Only run the preprocessing steps if the "dataset" directory is not present

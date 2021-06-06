@@ -17,12 +17,17 @@ in a directory named 'Data' containing a directory named 'Cars'
 
 RUNNING THE PROJECT:
 =============================
--> Run "preprocessing.py" for:
-	-> Reorganizing and analysing the dataset
-	-> Splitting the data into training, validation and testing sets
-	-> Performing preprocessing on the training, validation and testing sets
-	-> A subsample is also computed and serialized, so that the Keras image data generator will be able to normalize the input images for training
--> Upload the newly obtained "training_data" and "pickles" directories to a Google Drive account
--> Upload the "notebooks" directory to the same Google Drive account
--> Run "notebooks\training.ipynb" in Google Colab for:
-	-> Performing the training process and saving results
+-> If you want to retrain the algorithm, perform the following:
+	-> Create and activate an environment as outlined above
+	-> Run "scripts\preprocessing.py" for:
+		-> Reorganizing and analysing the dataset
+		-> Splitting the data into training and testing sets
+		-> Performing preprocessing on the training and testing sets
+		-> Computing and serializing a subsample, so that the Keras image data generator will be able to normalize the input images for training
+  -> If training on Google Colab is preferred:
+  	-> Upload the "notebooks" and "training_data" directories to a Google Drive account
+  	-> Upload the "pickles\subsample.npy" and "texts\top_10_brands_samples_counts.txt" files to a directory named "resources" to the same Google Drive account
+	  -> Run "notebooks\training.ipynb" in Google Colab for:
+		  -> Performing the training process and saving the results
+  -> If training locally is preferred:
+    -> Run "scripts\training.py"
